@@ -1,58 +1,77 @@
 use crate::*;
 
 #[near_bindgen]
-impl Marketplace {
+impl DelugeBase {
+    // Every Product is associated with it's product
     #[payable]
-    pub fn create_product(&mut self, product: Product) -> String {
+    pub fn create_product(&mut self, store_id: String, product: Product) -> String {
         assert_one_yocto();
-        let store = self
-            .stores
-            .get(&product.store_account_id)
-            .expect("Store does not exist");
-        let id = format!("{}:{}", store.id, product.id);
-        self.products.insert(&id, &product);
-        id.to_string()
+        // TODO: Store keys with storeid : SOme mechanism to have predictable key structure
+        let mut store = self.stores.get(&store_id).expect("Store does not exist");
+
+        let pkey = format!("{}:{}", store_id, product.pid);
+        store.products.push(product.pid.clone());
+
+        // Update the persistent store
+        self.products.insert(&pkey, &product);
+        self.stores.insert(&store_id, &store);
+
+        "OK".to_string()
     }
-    pub fn retrieve_product(self, id: String) -> Option<Product> {
-        self.products.get(&id)
+    pub fn retrieve_product(self, store_id: String, pid: String) -> Product {
+        // Match the cid and return the dereferenced value back
+        let pkey = format!("{}:{}", store_id, pid);
+        self.products
+            .get(&pkey)
+            .expect("Product does not exists!")
+            .clone()
     }
     pub fn update_product(
         &mut self,
-        product_id: String,
-        store_account_id: String,
-        description: Option<String>,
-        media_url: Option<String>,
+        pid: String,
+        store_id: String,
+        inventory: Option<u128>,
+        cid: Option<String>,
         name: Option<String>,
         price: Option<u128>,
     ) -> String {
-        self.stores
-            .get(&store_account_id)
-            .expect("Store does not exist");
-            let id = format!("{}:{}", store_account_id, product_id);
-        let mut product = self.products.get(&id).expect("Product does not exist");
-        match description {
-            Some(x) => product.description = x,
-            None => {}
-        }
-        match media_url {
-            Some(x) => product.media_url = x,
-            None => {}
-        }
+        self.stores.get(&store_id).expect("Store does not exist");
+
+        let pkey = format!("{}:{}", store_id, pid);
+
+        let mut product = self.products.get(&pkey).expect("Product does not exist");
+
+        // Mutate Store State
         match price {
-            Some(x) => product.price = x,
+            Some(x) => product.price = U128::from(x),
             None => {}
         }
         match name {
             Some(x) => product.name = x,
             None => {}
         }
-        let id = format!("{}:{}", store_account_id, product.id);
-        self.products.insert(&id, &product);
+        match inventory {
+            Some(x) => product.inventory = U128::from(x),
+            None => {}
+        }
+        match cid {
+            Some(x) => product.cid = x,
+            None => {}
+        }
+
+        self.products.insert(&pkey, &product);
+
         "OK".to_string()
     }
-    pub fn delete_product(self) {
+    pub fn delete_product(&mut self, store_id: String, pid: String) -> String {
         assert_one_yocto();
         // TODO: Delete product
+        self.stores.get(&store_id).expect("Store doesn't exits. ");
+
+        self.products.remove(&pid);
+        
+        "OK".to_string()
+
         // TODO: Refund storage
     }
 }

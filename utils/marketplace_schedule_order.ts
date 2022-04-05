@@ -3,6 +3,7 @@ import { Account, connect, ConnectConfig, Contract, InMemorySigner, keyStores, S
 import * as cla from "command-line-args";
 import config from "./config";
 import { join } from "path";
+import { type } from "os";
 const ATTACHED_GAS = "300000000000000";
 const YOCTO_NEAR = "1000000000000000000000000";
 
@@ -15,6 +16,9 @@ async function execute() {
         },
         {
             name: "accountName", alias: "a", type: String, defaultValue: "fabrics-delivery.test.near",
+        },
+        {
+            name: "customerAccountId", alias: "i", type: String, defaultValue: "clifford.test.near",
         },
         {
             name: "orderId", alias: "o", type: String, defaultValue: null,
@@ -51,7 +55,7 @@ async function run(options: cla.CommandLineOptions) {
     console.log("contract", { contract }, contract.schedule_order);
     const response = await contract.schedule_order({
         args: {
-            store_account_id: options.accountName, order_id: options.orderId
+            customer_account_id: options.customerAccountId, order_id: options.orderId
         },
         gas: ATTACHED_GAS,
         amount: "1",

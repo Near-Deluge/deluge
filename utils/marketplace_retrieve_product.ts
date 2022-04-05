@@ -49,7 +49,7 @@ async function run(options: cla.CommandLineOptions) {
     console.log("getAccountBalance", await account.getAccountBalance())
     const contract: any = await initContract(options.contractName, account);
     console.log("contract", { contract }, contract.retrieve_product);
-    const response = await contract.retrieve_product({ account_id: options.accountName, id: options.id });
+    const response = await contract.retrieve_product({ store_id: options.accountName, pid: options.id });
     console.log("response", response);
 }
 

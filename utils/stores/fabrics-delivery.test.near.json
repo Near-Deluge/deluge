@@ -5,5 +5,11 @@
     "lat_lng": {
         "latitude": 43.651070,
         "longitude": -79.347015
-    }
+    },
+    "website": "https://www.fabrics.com",
+    "logo": "https://www.fabrics.com/logo.png",
+    "country": "India",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "products": []
 }

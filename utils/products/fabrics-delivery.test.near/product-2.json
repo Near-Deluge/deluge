@@ -1,8 +1,7 @@
 {
-    "id": "product-2",
-    "store_account_id": "fabrics-delivery.test.near",
-    "description": "Designed by Sara Mulvanny for Cotton + Steel, this fabric is screen printed on cotton canvas. It's versatile and lightweight, making it perfect for window accents (draperies, valances, curtains and swags), accent pillows, bed skirts, duvet covers, slipcovers, upholstery and other home decor accents. Create handbags, tote bags, aprons and more!",
-    "name": "Cotton + Steel London Town London Forever Canvas Cloudy Day",
-    "media_url": "https://images.fabric.com/images/605/605/0810923.jpg",
-    "price": 20800000
+    "pid": "product-2",
+    "cid": "QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+    "inventory": "600",
+    "name": "Fabric Merchants Stretch Sweater ",
+    "price": "2240000000"
 }

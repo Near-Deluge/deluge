@@ -1,8 +1,7 @@
 {
-    "id": "product-1",
-    "store_account_id": "fabrics-delivery.test.near",
-    "description": "This textured double knit fabric features a soft hand and beautiful drape with 25% stretch across the grain and 10% vertical stretch. Perfect for dresses, skirts, lightweight jackets and more.",
+    "pid": "product-1",
+    "cid": "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+    "inventory": "200",
     "name": "Fabric Merchants Stretch Liverpool Double Knit Wild Flowers Black/Rust",
-    "media_url": "https://images.fabric.com/images/605/605/0761943.jpg",
-    "price": 7420000
+    "price": "7420000000"
 }

@@ -46,7 +46,7 @@ async function run(options: cla.CommandLineOptions) {
     console.log("getAccountBalance", await account.getAccountBalance())
     const contract: any = await initContract(options.contractName, account);
     console.log("contract", { contract }, contract.create_store);
-    const response = await contract.retrieve_store({ account_id: options.accountName, id: options.accountName });
+    const response = await contract.retrieve_store({ account_id: options.accountName, store_id: options.accountName });
     console.log("response", response);
 }
 

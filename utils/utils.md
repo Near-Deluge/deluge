@@ -4,15 +4,19 @@
 `npx ts-node ft_balance_of.ts -c usdt.test.near -a dev0.test.near`
 
 ## ft_transfer
-`npx ts-node ft_transfer.ts -c usdt.test.near -a dev0.test.near -r clifford.test.near --amount 100`
+Amount value is in absolute. No conversions.
+`npx ts-node ft_transfer.ts -c usdt.test.near -a dev0.test.near -r clifford.test.near --amount 100000000000`
 
-## ft_transfer_call
+## ft_transfer_call // Entry to the order creation
 `npx ts-node ft_transfer_call.ts -c usdt.test.near -a dev0.test.near -r marketplace.test.near -o orders/order-1.json -m order-1.json`
 
 # Interact with marketplace
 
 # IMPORTANT: setup marketplace ft_contract_name
 `npx ts-node marketplace_set_ft_contract_name.ts -c marketplace.test.near -a marketplace.test.near --ftContractName usdt.test.near`
+
+# setup rating smart contract name
+# setup nft marketplace contract name
 
 ## create_store
 `npx ts-node marketplace_create_store.ts -c marketplace.test.near -a fabrics-delivery.test.near -p stores/fabrics-delivery.test.near.json`
@@ -34,8 +38,8 @@ TODO
 `npx ts-node marketplace_update_product.ts -c marketplace.test.near -a fabrics-delivery.test.near --productId product-1 --description "updated description!"`
 
 ## retrieve_product
-`npx ts-node marketplace_retrieve_product.ts -c marketplace.test.near -a fabrics-delivery.test.near -i fabrics-delivery.test.near:product-1`
-`npx ts-node marketplace_retrieve_product.ts -c marketplace.test.near -a fabrics-delivery.test.near -i fabrics-delivery.test.near:product-2`
+`npx ts-node marketplace_retrieve_product.ts -c marketplace.test.near -a fabrics-delivery.test.near -i product-1`
+`npx ts-node marketplace_retrieve_product.ts -c marketplace.test.near -a fabrics-delivery.test.near -i product-2`
 
 ## list_store_products
 `npx ts-node marketplace_list_store_products.ts -c marketplace.test.near -a fabrics-delivery.test.near`
@@ -44,7 +48,7 @@ TODO
 `npx ts-node ft_transfer_call.ts -c usdt.test.near -a clifford.test.near -r marketplace.test.near -o orders/order-1.json -m order-1.json -i order-1`
 
 ## retrieve_order
-`npx ts-node marketplace_retrieve_order.ts -c marketplace.test.near -a fabrics-delivery.test.near -i fabrics-delivery.test.near:order-1`
+`npx ts-node marketplace_retrieve_order.ts -c marketplace.test.near -a clifford.test.near -i order-1`
 
 ## list_customer_orders
 `npx ts-node marketplace_list_customer_orders.ts -c marketplace.test.near -a fabrics-delivery.test.near -i clifford.test.near`
@@ -53,13 +57,17 @@ TODO
 `npx ts-node marketplace_list_store_orders.ts -c marketplace.test.near -a fabrics-delivery.test.near -i fabrics-delivery.test.near`
 
 ## complete_order
+## Change
 `npx ts-node marketplace_complete_order.ts -c marketplace.test.near -a fabrics-delivery.test.near -o fabrics-delivery.test.near:order-1`
 
 ## schedule_order
-`npx ts-node marketplace_schedule_order.ts -c marketplace.test.near -a fabrics-delivery.test.near -o fabrics-delivery.test.near:order-1`
+`npx ts-node marketplace_schedule_order.ts -c marketplace.test.near -a fabrics-delivery.test.near -i clifford.test.near -o order-1`
+
+## intransit_order
+`npx ts-node marketplace_order_intransit.ts -c marketplace.test.near -a fabrics-delivery.test.near -i clifford.test.near -o order-1`
 
 ## cancel_order
-`npx ts-node marketplace_cancel_order.ts -c marketplace.test.near -a fabrics-delivery.test.near -o fabrics-delivery.test.near:order-1`
+`npx ts-node marketplace_cancel_order.ts -c marketplace.test.near -a fabrics-delivery.test.near -o order-1`
 
 # Delete contract account
 near delete marketplace.test.near test.near

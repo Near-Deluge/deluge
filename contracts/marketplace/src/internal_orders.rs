@@ -1,3 +1,7 @@
+use std::fmt::format;
+use std::thread::AccessError;
+
+use near_sdk::env::sha256;
 use near_sdk::serde_json::json;
 use near_sdk::{AccountId, Gas, Promise};
 
@@ -6,32 +10,55 @@ use crate::*;
 const BASIC_GAS: Gas = 5_000_000_000_000;
 
 #[near_bindgen]
-impl Marketplace {
+impl DelugeBase {
     #[payable]
-    pub fn cancel_order(&mut self, store_account_id: String, order_id: String) -> String {
+    pub fn cancel_order(&mut self, customer_account_id:AccountId, order_id: String) -> String {
         assert_one_yocto();
+
         // Either Store or Customer can cancel the order
-        let order = self.orders.get(&order_id).expect("Order does not exist");
+        let okey = format!("{}:{}", customer_account_id, order_id);
+        let order = self.orders.get(&okey).expect("Order does not exist");
 
-        assert!(
-            store_account_id == order.store_account_id,
-            "Error. Not authorised"
-        );
-
+        // Customer can only cancel the order if it is still pending and store haven't scheduled it.
+        log!("Order key: {}", okey);
         // check unique storeid
         assert!(
-            env::predecessor_account_id() == order.store_account_id
+            env::predecessor_account_id() == order.seller_id
                 || env::predecessor_account_id() == order.customer_account_id,
             "Error. Not authorised"
         );
 
-        // TODO: add this back in
-        assert!(
-            matches!(order.status, OrderStatus::SCHEDULED)
-                || matches!(order.status, OrderStatus::PENDING),
-            "Only Pending or Scheduled orders can be cancelled"
-        );
-        self.finalize_cancel_order(order_id);
+        match order.status {
+            // If order is pending then user or store can cancel the order
+            OrderStatus::PENDING => {}
+            // If order is scheduled then store can cancel an order if his stock empties
+            OrderStatus::SCHEDULED => {
+                assert!(
+                    env::predecessor_account_id() == order.seller_id,
+                    "Error. Only Seller can cancel."
+                );
+            }
+            OrderStatus::INTRANSIT => {
+                assert!(
+                    env::predecessor_account_id() == order.seller_id,
+                    "Error. Only Seller can cancel."
+                );
+            }
+            OrderStatus::CANCELLED => {
+                // Since the order is already cancelled, Do nothing here.
+                return "CANCELLED".to_string();
+            }
+            OrderStatus::COMPLETED => {
+                // Since order is already completed, Do nothing here.
+                return "COMPLETED".to_string();
+            }
+        }
+
+        // TODO: On successful cancellation of order, do increase the amount of inventory
+
+        // Can progress here only if OrderStatus is PENDING | SCHEDULED | INTRANSIT
+
+        self.finalize_cancel_order(okey);
         // Transfer funds back from marketplace contract to customer
         let contract_id: AccountId = AccountId::from(&self.ft_contract_name);
         transfer_funds(
@@ -42,32 +69,50 @@ impl Marketplace {
         "OK".to_string()
     }
 
-    pub fn finalize_cancel_order(&mut self, order_id: String) {
+    fn finalize_cancel_order(&mut self, okey: String) {
         // Either Store or Customer can cancel the order
-        let mut order = self.orders.get(&order_id).expect("Order does not exist");
-        assert!(
-            matches!(order.status, OrderStatus::SCHEDULED)
-                || matches!(order.status, OrderStatus::PENDING),
-            "Only Pending or Scheduled orders can be cancelled"
-        );
+        let mut order = self.orders.get(&okey).expect("Order does not exist");
+
         order.status = OrderStatus::CANCELLED;
-        self.orders.insert(&order_id, &order);
+        self.orders.insert(&okey, &order);
     }
 
     #[payable]
-    pub fn schedule_order(&mut self, store_account_id: String, order_id: String) -> String {
+    pub fn intransit_order(&mut self, customer_account_id: AccountId, order_id: String) -> String {
         assert_one_yocto();
-        // Either Store or Customer can cancel the order
-        let mut order = self.orders.get(&order_id).expect("Order does not exist");
 
-        assert!(
-            store_account_id == order.store_account_id,
-            "Error. Not authorised"
-        );
+        // Only Store/Seller can SCHEDULE an Order
+        let okey = format!("{}:{}", customer_account_id, order_id);
+        let mut order = self.orders.get(&okey).expect("Order does not exist");
 
         // check storeid
         assert!(
-            env::predecessor_account_id() == order.store_account_id,
+            env::predecessor_account_id() == order.seller_id,
+            "Error. Not authorised"
+        );
+
+        assert!(
+            matches!(order.status, OrderStatus::SCHEDULED),
+            "Only scheduled orders can be sent to transit."
+        );
+
+        order.status = OrderStatus::INTRANSIT;
+        self.orders.insert(&okey, &order);
+        "OK".to_string()
+
+    }
+
+    #[payable]
+    pub fn schedule_order(&mut self, customer_account_id: AccountId, order_id: String) -> String {
+        assert_one_yocto();
+
+        // Only Store/Seller can SCHEDULE an Order
+        let okey = format!("{}:{}", customer_account_id, order_id);
+        let mut order = self.orders.get(&okey).expect("Order does not exist");
+
+        // check storeid
+        assert!(
+            env::predecessor_account_id() == order.seller_id,
             "Error. Not authorised"
         );
 
@@ -77,55 +122,50 @@ impl Marketplace {
         );
 
         order.status = OrderStatus::SCHEDULED;
-        self.orders.insert(&order_id, &order);
+        self.orders.insert(&okey, &order);
         "OK".to_string()
     }
-    pub fn retrieve_order(self, order_id: String) -> Order {
-        self.orders.get(&order_id).expect("Order does not exist")
+
+    pub fn retrieve_order(self, customer_account_id: AccountId, order_id: String) -> Order {
+        let okey = format!("{}:{}", customer_account_id, order_id);
+        log!("Order Key: {}", okey);
+        self.orders.get(&okey).expect("Order does not exist")
     }
+
+    // Can complete the order once supplied with orig_seed for hash value. 
+    // If not given, transaction can't be completed
     #[payable]
-    pub fn complete_order(&mut self, store_account_id: String, order_id: String) -> String {
-        // Can be done by the store only
+    pub fn complete_order(&mut self, orig_seed: String, order_id: String) -> String {
+        // Can be done by the anyone as long as orig_seed matches
         assert_one_yocto();
         // Either Store or Customer can cancel the order
         let order = self.orders.get(&order_id).expect("Order does not exist");
 
         assert!(
-            store_account_id == order.store_account_id,
-            "Error. Not authorised"
+            matches!(order.status, OrderStatus::INTRANSIT),
+            "Only In transit orders can be Completed"
         );
-
-        // check unique storeid
+        
+        // Asset that indeed customer seed which has been supplied
         assert!(
-            env::predecessor_account_id() == order.store_account_id,
-            "Error. Not authorised"
+            String::from_utf8(sha256(&orig_seed.try_to_vec().unwrap())).unwrap() == order.customer_secret,
+            "Error. Seed is not correct!!"
         );
 
-        assert!(
-            matches!(order.status, OrderStatus::SCHEDULED),
-            "Only scheduled orders can be Completed"
-        );
-
-        self.finalize_complete_order(order_id);
+        let okey = format!("{}:{}", order.customer_account_id, order_id);
+        self.finalize_complete_order(okey);
 
         // Transfer funds back from marketplace contract to store
         let contract_id: AccountId = AccountId::from(&self.ft_contract_name);
-        transfer_funds(
-            &contract_id,
-            order.payload.amount,
-            order.store_account_id,
-        );
+        transfer_funds(&contract_id, order.payload.amount, order.seller_id);
         "OK".to_string()
     }
 
-    pub fn finalize_complete_order(&mut self, order_id: String) {
-        let mut order = self.orders.get(&order_id).expect("Order does not exist");
-        assert!(
-            matches!(order.status, OrderStatus::SCHEDULED),
-            "Only scheduled orders can be Completed"
-        );
+    pub fn finalize_complete_order(&mut self, okey: String) {
+        let mut order = self.orders.get(&okey).expect("Order does not exist");
+        
         order.status = OrderStatus::COMPLETED;
-        self.orders.insert(&order_id, &order);
+        self.orders.insert(&okey, &order);
     }
 
     pub fn list_customer_orders(self, customer_account_id: String) -> Vec<Order> {
@@ -139,8 +179,17 @@ impl Marketplace {
         // TODO: improve performance
         self.orders
             .values()
-            .filter(|vec| vec.store_account_id == store_account_id)
+            .filter(|vec| vec.seller_id == store_account_id)
             .collect()
+    }
+
+    // Testing Function
+    pub fn get_storage_keys(self) -> Vec<String> {
+        self.orders.keys().collect()
+    }
+
+    pub fn get_storage_values(self) -> Vec<Order> {
+        self.orders.values().collect()
     }
 }
 
@@ -176,7 +225,7 @@ mod tests {
     fn test_list_store_orders() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut contract = Marketplace::default();
+        let mut contract = DelugeBase::default();
         contract.ft_contract_name = String::from("usdt.test.near");
         let stores = contract.list_store_orders("fabrics-delivery.test.near".to_string());
         assert_eq!(0, stores.len());
@@ -186,22 +235,28 @@ mod tests {
     fn test_list_customer_orders() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut contract = Marketplace::default();
+        let mut contract = DelugeBase::default();
         contract.ft_contract_name = String::from("usdt.test.near");
         let stores = contract.list_customer_orders("fabrics-delivery.test.near".to_string());
         assert_eq!(0, stores.len());
     }
 
     #[test]
-    fn test_cancel_non_existing_order_should_fail(){
-        assert_panic!({
-            let mut context = get_context(vec![], false);
-            context.attached_deposit = 1;
-            testing_env!(context);
-            let mut contract = Marketplace::default();
-            contract.ft_contract_name = String::from("usdt.test.near");
-            contract.cancel_order("fabrics-delivery.test.near".to_string(), "order-1".to_string());
-        }, String, "Order does not exist");
+    fn test_cancel_non_existing_order_should_fail() {
+        assert_panic!(
+            {
+                let mut context = get_context(vec![], false);
+                context.attached_deposit = 1;
+                testing_env!(context);
+                let mut contract = DelugeBase::default();
+                contract.ft_contract_name = String::from("usdt.test.near");
+                contract.cancel_order(
+                    "fabrics-delivery.test.near".to_string(),
+                    "order-1".to_string(),
+                );
+            },
+            String,
+            "Order does not exist"
+        );
     }
-
 }

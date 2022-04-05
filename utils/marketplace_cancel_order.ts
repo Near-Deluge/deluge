@@ -17,6 +17,9 @@ async function execute() {
             name: "accountName", alias: "a", type: String, defaultValue: "fabrics-delivery.test.near",
         },
         {
+            name: "customerName", alias: "b", type: String, defaultValue: "clifford.test.near",
+        },
+        {
             name: "orderId", alias: "o", type: String, defaultValue: null,
         },
     ]);
@@ -37,7 +40,7 @@ async function initContract(contractName: string, account: Account) {
         contractName,
         {
             // name of contract you're connecting to
-            viewMethods: [], // view methods do not change state but usually return a value
+            viewMethods: ["get_storage_keys", "get_storage_values"], // view methods do not change state but usually return a value
             changeMethods: ["cancel_order"], // change methods modify state
         }
     );
@@ -51,7 +54,7 @@ async function run(options: cla.CommandLineOptions) {
     console.log("contract", { contract }, contract.cancel_order);
     const response = await contract.cancel_order({
         args: {
-            store_account_id: options.accountName, order_id: options.orderId
+            customer_account_id: options.customerName, order_id: options.orderId
         },
         gas: ATTACHED_GAS,
         amount: "1",

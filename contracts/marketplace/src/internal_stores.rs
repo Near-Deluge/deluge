@@ -1,7 +1,8 @@
+
 use crate::*;
 
 #[near_bindgen]
-impl Marketplace {
+impl DelugeBase {
     // TODO: Storage management, assert_one_yocto, etc.
     #[payable]
     pub fn create_store(&mut self, store: Store) -> String {
@@ -19,13 +20,24 @@ impl Marketplace {
 
         "OK".to_string()
     }
-    pub fn retrieve_store(self, id: String) -> Option<Store> {
-        let store = self.stores.get(&id);
+    pub fn retrieve_store(self, store_id: String) -> Option<Store> {
+        let store = self.stores.get(&store_id);
         store
     }
     pub fn list_stores(self) -> Vec<Store> {
         self.stores.values().collect()
     }
+
+    // pub id: String,
+    // pub lat_lng: LatLng,
+    // pub address: String,
+    // pub name: String,
+    // pub products: HashMap<String, Product>,
+    // pub website: String,
+    // pub logo: String, // CID or link to the hosted logo
+    // pub country : String,
+    // pub state: String,
+    // pub city: String
 
     pub fn update_store(
         &mut self,
@@ -33,6 +45,11 @@ impl Marketplace {
         name: Option<String>,
         address: Option<String>,
         lat_lng: Option<LatLng>,
+        website: Option<String>,
+        logo: Option<String>,
+        country: Option<String>,
+        state: Option<String>,
+        city: Option<String>,
     ) {
         let mut store = self.stores.get(&id).expect("Store does not exist");
         match name {
@@ -47,20 +64,65 @@ impl Marketplace {
             Some(x) => store.lat_lng = x,
             None => {}
         }
+        match website {
+            Some(x) => store.website = x,
+            None => {}
+        }
+        match logo {
+            Some(x) => store.logo = x,
+            None => {}
+        }
+        match country {
+            Some(x) => store.country = x,
+            None => {}
+        }
+        match state {
+            Some(x) => store.state = x,
+            None => {}
+        }
+        match city {
+            Some(x) => store.city = x,
+            None => {}
+        }
         self.stores.insert(&id, &store);
     }
-    pub(crate) fn delete_store(self, id: String) {
+    pub(crate) fn delete_store(&mut self, store_id: AccountId) -> String{
         assert_one_yocto();
         // TODO: Delete all products
+        // 1. Delete all products from products
+        // 2. (Optional) Delete all pending orders.
+        // 3. Delete the store itself
+        // 4. Refund Storage
+        let store = self.stores.get(&store_id).expect("Store doesn't exists.");
+        
+        // Store deleting the store must be the deleting store one
+        assert!(env::predecessor_account_id() == store.id , "Unauthorized access");
+
+        let mut pkeys = Vec::new();
+        for pid in store.products {
+            pkeys.push(format!("{}:{}", store_id, pid));
+        }
+
+        for key in pkeys {
+            self.products.remove(&key);
+        }
+
+        self.stores.remove(&store_id);
+
         // TODO: Refund storage
+
+        "OK".to_string()
+
+
     }
 
-    pub fn list_store_products(self, id: String) -> Vec<Product> {
-        self.stores.get(&id).expect("Store does not exist");
-        self.products
-            .values()
-            .filter(|x| x.store_account_id == id)
-            .collect()
+    pub fn list_store_products(self, store_id: AccountId) -> Vec<Product> {
+        let store = self.stores.get(&store_id).expect("Store does not exist.");
+        let mut prods = Vec::new();
+        for pid in store.products {
+            prods.push(self.products.get(&format!("{}:{}", store_id, pid)).unwrap());
+        }
+        prods
     }
 }
 
@@ -70,6 +132,7 @@ impl Marketplace {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use near_sdk::MockedBlockchain;
     use near_sdk::{testing_env, VMContext};
@@ -100,7 +163,7 @@ mod tests {
     fn test_list_stores_with_empty_state() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let contract = Marketplace::default();
+        let contract = DelugeBase::default();
         let stores = contract.list_stores();
         assert_eq!(0, stores.len());
     }
@@ -111,15 +174,22 @@ mod tests {
         assert_panic!({
             let context = get_context(vec![], false);
             testing_env!(context);
-            let mut contract = Marketplace::default();
+            let mut contract = DelugeBase::default();
             let store: Store = Store {
                 id: "fabrics-delivery.test.near".to_string(),
                 lat_lng: LatLng {
                     latitude: 43.651070,
                     longitude: -79.347015,
                 },
-                address: "Toronto, Canada".to_string(),
+                address: "21/3 Main Street Gandhi Nagar".to_string(),
                 name: "Fabrics Delivery".to_string(),
+                country: "India".to_string(),
+                state: "Delhi".to_string(),
+                logo: "https://ramesh_store.com/logo.png".to_string(),
+
+                website: "https://ramesh_store.com".to_string(),
+                city: "South Delhi".to_string(),
+                products: vec![]
             };
             contract.create_store(store);
         }, String, starts with "assertion failed:");
@@ -131,15 +201,22 @@ mod tests {
         assert_panic!({
             let context = get_context(vec![], false);
             testing_env!(context);
-            let mut contract = Marketplace::default();
-            let store: Store = Store {
+            let mut contract = DelugeBase::default();
+            let store: Store =  Store {
                 id: "fabrics-delivery.test.near".to_string(),
                 lat_lng: LatLng {
                     latitude: 43.651070,
                     longitude: -79.347015,
                 },
-                address: "Toronto, Canada".to_string(),
+                address: "21/3 Main Street Gandhi Nagar".to_string(),
                 name: "Fabrics Delivery".to_string(),
+                country: "India".to_string(),
+                state: "Delhi".to_string(),
+                logo: "https://ramesh_store.com/logo.png".to_string(),
+
+                website: "https://ramesh_store.com".to_string(),
+                city: "South Delhi".to_string(),
+                products: vec![]
             };
             contract.create_store(store);
         }, String, starts with "assertion failed:");
@@ -152,26 +229,34 @@ mod tests {
         context.attached_deposit = 1;
         context.predecessor_account_id = "fabrics-delivery.test.near".to_string();
         testing_env!(context);
-        let mut contract = Marketplace::default();
-        let store: Store = Store {
+        let mut contract = DelugeBase::default();
+        let store: Store =  Store {
             id: "fabrics-delivery.test.near".to_string(),
             lat_lng: LatLng {
                 latitude: 43.651070,
                 longitude: -79.347015,
             },
-            address: "Toronto, Canada".to_string(),
+            address: "21/3 Main Street Gandhi Nagar".to_string(),
             name: "Fabrics Delivery".to_string(),
+            country: "India".to_string(),
+            state: "Delhi".to_string(),
+            logo: "https://ramesh_store.com/logo.png".to_string(),
+            website: "https://ramesh_store.com".to_string(),
+            city: "South Delhi".to_string(),
+            products: vec![]
         };
         let result = contract.create_store(store);
         assert_eq!(result, "OK".to_string());
     }
+
+    // TODO: Modify below tests
     #[test]
     fn test_failure_ft_transfer_call_with_incorrect_amounts() {
         assert_panic!(
           {
             let context = get_context(vec![], false);
             testing_env!(context);
-            let mut contract = Marketplace::default();
+            let mut contract = DelugeBase::default();
             let data = json!({
               "id": "order-id",
               "customer_account_id": "customer.test.near",

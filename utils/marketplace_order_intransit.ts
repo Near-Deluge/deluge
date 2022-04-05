@@ -3,6 +3,7 @@ import { Account, connect, ConnectConfig, Contract, InMemorySigner, keyStores, S
 import * as cla from "command-line-args";
 import config from "./config";
 import { join } from "path";
+import { type } from "os";
 const ATTACHED_GAS = "300000000000000";
 const YOCTO_NEAR = "1000000000000000000000000";
 
@@ -17,7 +18,10 @@ async function execute() {
             name: "accountName", alias: "a", type: String, defaultValue: "fabrics-delivery.test.near",
         },
         {
-            name: "payloadJsonFile", alias: "p", type: String, defaultValue: null,
+            name: "customerAccountId", alias: "i", type: String, defaultValue: "clifford.test.near",
+        },
+        {
+            name: "orderId", alias: "o", type: String, defaultValue: null,
         },
     ]);
 
@@ -38,7 +42,7 @@ async function initContract(contractName: string, account: Account) {
         {
             // name of contract you're connecting to
             viewMethods: [], // view methods do not change state but usually return a value
-            changeMethods: ["create_product"], // change methods modify state
+            changeMethods: ["intransit_order"], // change methods modify state
         }
     );
 }
@@ -46,11 +50,17 @@ async function initContract(contractName: string, account: Account) {
 async function run(options: cla.CommandLineOptions) {
     const near = await connect(config);
     const account = await near.account(options.accountName);
-    const product = require(join(__dirname, options.payloadJsonFile));
     console.log(await account.getAccountBalance())
     const contract: any = await initContract(options.contractName, account);
-    console.log("contract", { contract }, contract.create_product);
-    const response = await contract.create_product({ args: { product, store_id: options.accountName }, gas: ATTACHED_GAS, amount: "1", meta: "create_product" });
+    console.log("contract", { contract }, contract.intransit_order);
+    const response = await contract.intransit_order({
+        args: {
+            customer_account_id: options.customerAccountId, order_id: options.orderId
+        },
+        gas: ATTACHED_GAS,
+        amount: "1",
+        meta: "intransit_order"
+    });
     console.log("response", { response });
 }
 

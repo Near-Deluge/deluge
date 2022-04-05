@@ -1,3 +1,4 @@
+use near_sdk::json_types::U128;
 use near_sdk::{env, near_bindgen, setup_alloc, Promise, AccountId, ext_contract, Gas};
 use near_sdk::serde_json::{json};
 
@@ -18,7 +19,7 @@ pub(crate) fn assert_one_yocto() {
 
 const BASIC_GAS: Gas = 5_000_000_000_000;
 
-pub(crate) fn transfer_funds(contract_id: &AccountId, amount: String, recipient_id: String) -> Promise {
+pub(crate) fn transfer_funds(contract_id: &AccountId, amount: U128, recipient_id: String) -> Promise {
     let method_name = b"ft_transfer".to_vec();
     let data: Vec<u8> = json!({
         "receiver_id": recipient_id,

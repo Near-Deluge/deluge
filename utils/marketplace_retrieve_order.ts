@@ -11,7 +11,7 @@ console.log(config);
 async function execute() {
     const options = cla([
         {
-            name: "accountName", alias: "a", type: String, defaultValue: "fabrics-delivery.test.near",
+            name: "accountName", alias: "a", type: String, defaultValue: "clifford.test.near",
         },
         {
             name: "contractName", alias: "c", type: String, defaultValue: "marketplace.test.near",
@@ -49,7 +49,7 @@ async function run(options: cla.CommandLineOptions) {
     console.log("getAccountBalance", await account.getAccountBalance())
     const contract: any = await initContract(options.contractName, account);
     console.log("contract", { contract }, contract.retrieve_order);
-    const response = await contract.retrieve_order({ account_id: options.accountName, order_id: options.id });
+    const response = await contract.retrieve_order({ customer_account_id: options.accountName, order_id: options.id });
     console.log("response", response);
 }
 

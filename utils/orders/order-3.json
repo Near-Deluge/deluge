@@ -1,17 +1,17 @@
 {
-    "id": "order-2",
+    "id": "order-3",
     "customer_account_id": "clifford.test.near",
     "seller_id": "fabrics-delivery.test.near",
     "status": "PENDING",
     "cid": "Qwer3872958hiruh3ijnfwdfsg",
     "customer_secret": "888b19a43b151683c87895f6211d9f8640f97bdc8ef32f03dbe057c8f5e56d32", 
     "payload": {
-        "amount": "7420000000",
+        "amount": "2240000000",
         "line_items": [
             {
                 "count": 2,
-                "product_id": "product-1",
-                "price": "7420000000"
+                "product_id": "product-2",
+                "price": "2240000000"
             }
         ]
     }
