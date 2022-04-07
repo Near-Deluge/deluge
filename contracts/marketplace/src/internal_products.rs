@@ -12,6 +12,8 @@ impl DelugeBase {
         let pkey = format!("{}:{}", store_id, product.pid);
         store.products.push(product.pid.clone());
 
+        // TODO: Check if enough NEAR has been supplied for storage costs.
+
         // Update the persistent store
         self.products.insert(&pkey, &product);
         self.stores.insert(&store_id, &store);
@@ -19,7 +21,7 @@ impl DelugeBase {
         "OK".to_string()
     }
     pub fn retrieve_product(self, store_id: String, pid: String) -> Product {
-        // Match the cid and return the dereferenced value back
+        
         let pkey = format!("{}:{}", store_id, pid);
         self.products
             .get(&pkey)
@@ -59,19 +61,35 @@ impl DelugeBase {
             None => {}
         }
 
+        // TODO: Check for Storage changes and enought NEAR has been supplied for the same
+
         self.products.insert(&pkey, &product);
 
         "OK".to_string()
     }
     pub fn delete_product(&mut self, store_id: String, pid: String) -> String {
-        assert_one_yocto();
-        // TODO: Delete product
-        self.stores.get(&store_id).expect("Store doesn't exits. ");
 
-        self.products.remove(&pid);
+        let mut store = self.stores.get(&store_id).expect("Store doesn't exits. ");
+
+        // TODO: Once product is deleted successfully refund the storage to the store owner.
+        
+        let pkey = format!("{}:{}", store_id, pid);
+        self.products.get(&pkey).expect("Product doesn't exists!!");
+
+        assert!(
+            env::predecessor_account_id() == store.id,
+            "Only Store owner can delete his own product!!"
+        );
+
+        // Find the index from the products vector
+        let index = store.products.iter().position(|p| *p == pid).unwrap();
+
+        store.products.remove(index);
+
+        self.products.remove(&pkey);
+        self.stores.insert(&store_id, &store);
         
         "OK".to_string()
 
-        // TODO: Refund storage
     }
 }

@@ -16,6 +16,8 @@ impl DelugeBase {
         let existing_store = self.stores.get(&store.id);
         assert!(existing_store.is_none(), "Store with ID already exists");
 
+        // TODO: Check if enought NEAR has been supplied for storage costs.
+
         self.stores.insert(&store.id, &store);
 
         "OK".to_string()
@@ -84,9 +86,14 @@ impl DelugeBase {
             Some(x) => store.city = x,
             None => {}
         }
+
+        // TODO: Check if enough NEAR has been supplied for storage changes. (If lessen the storage then refund for the same).
+
         self.stores.insert(&id, &store);
     }
-    pub(crate) fn delete_store(&mut self, store_id: AccountId) -> String{
+
+    #[payable]
+    pub fn delete_store(&mut self, store_id: AccountId) -> String{
         assert_one_yocto();
         // TODO: Delete all products
         // 1. Delete all products from products
@@ -110,9 +117,7 @@ impl DelugeBase {
         self.stores.remove(&store_id);
 
         // TODO: Refund storage
-
         "OK".to_string()
-
 
     }
 

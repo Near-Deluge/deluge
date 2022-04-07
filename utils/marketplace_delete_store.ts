@@ -29,25 +29,7 @@ async function execute() {
       name: "accountName",
       alias: "a",
       type: String,
-      defaultValue: "dev0.test.near",
-    },
-    {
-      name: "customerName",
-      alias: "b",
-      type: String,
-      defaultValue: "clifford.test.near",
-    },
-    {
-      name: "orderId",
-      alias: "o",
-      type: String,
-      defaultValue: null,
-    },
-    {
-      name: "seed",
-      alias: "s",
-      type: String,
-      defaultValue: null,
+      defaultValue: "fabrics-delivery.test.near",
     },
   ]);
 
@@ -66,7 +48,7 @@ async function initContract(contractName: string, account: Account) {
     {
       // name of contract you're connecting to
       viewMethods: [], // view methods do not change state but usually return a value
-      changeMethods: ["complete_order"], // change methods modify state
+      changeMethods: ["delete_store"], // change methods modify state
     }
   );
 }
@@ -74,18 +56,15 @@ async function initContract(contractName: string, account: Account) {
 async function run(options: cla.CommandLineOptions) {
   const near = await connect(config);
   const account = await near.account(options.accountName);
+  
   console.log(await account.getAccountBalance());
   const contract: any = await initContract(options.contractName, account);
-  console.log("contract", { contract }, contract.complete_order);
-  const response = await contract.complete_order({
-    args: {
-      orig_seed: options.seed,
-      customer_account_id: options.customerName,
-      order_id: options.orderId,
-    },
+  console.log("contract", { contract }, contract.delete_store);
+  const response = await contract.delete_store({
+    args: { store_id: options.accountName },
     gas: ATTACHED_GAS,
     amount: "1",
-    meta: "complete_order",
+    meta: "delete_store",
   });
   console.log("response", { response });
 }

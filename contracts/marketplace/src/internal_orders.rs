@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::fmt::format;
 use std::thread::AccessError;
 
@@ -12,7 +13,7 @@ const BASIC_GAS: Gas = 5_000_000_000_000;
 #[near_bindgen]
 impl DelugeBase {
     #[payable]
-    pub fn cancel_order(&mut self, customer_account_id:AccountId, order_id: String) -> String {
+    pub fn cancel_order(&mut self, customer_account_id: AccountId, order_id: String) -> String {
         assert_one_yocto();
 
         // Either Store or Customer can cancel the order
@@ -55,6 +56,8 @@ impl DelugeBase {
         }
 
         // TODO: On successful cancellation of order, do increase the amount of inventory
+        // TODO: On successful cancellation of order, do delete it from storage. 
+        //  Reason being as that order can be retrieved form the archival nodes as history will be maintained.
 
         // Can progress here only if OrderStatus is PENDING | SCHEDULED | INTRANSIT
 
@@ -99,7 +102,6 @@ impl DelugeBase {
         order.status = OrderStatus::INTRANSIT;
         self.orders.insert(&okey, &order);
         "OK".to_string()
-
     }
 
     #[payable]
@@ -132,28 +134,46 @@ impl DelugeBase {
         self.orders.get(&okey).expect("Order does not exist")
     }
 
-    // Can complete the order once supplied with orig_seed for hash value. 
+    // Can complete the order once supplied with orig_seed for hash value.
     // If not given, transaction can't be completed
     #[payable]
-    pub fn complete_order(&mut self, orig_seed: String, order_id: String) -> String {
+    pub fn complete_order(
+        &mut self,
+        orig_seed: String,
+        customer_account_id: AccountId,
+        order_id: String,
+    ) -> String {
         // Can be done by the anyone as long as orig_seed matches
         assert_one_yocto();
-        // Either Store or Customer can cancel the order
-        let order = self.orders.get(&order_id).expect("Order does not exist");
+
+        // Anyone can complete an order
+
+        let okey = format!("{}:{}", customer_account_id, order_id);
+        let order = self.orders.get(&okey).expect("Order does not exist");
 
         assert!(
             matches!(order.status, OrderStatus::INTRANSIT),
             "Only In transit orders can be Completed"
         );
-        
-        // Asset that indeed customer seed which has been supplied
-        assert!(
-            String::from_utf8(sha256(&orig_seed.try_to_vec().unwrap())).unwrap() == order.customer_secret,
-            "Error. Seed is not correct!!"
-        );
+
+        // Assert that indeed customer seed which has been supplied is correct
+        let sha256_hash = sha256(&orig_seed.to_owned().as_bytes());
+
+        let o_pub_hash = order.customer_secret.clone();
+        let b_arr: Vec<u8> = (0..o_pub_hash.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&o_pub_hash[i..i + 2], 16).unwrap())
+            .collect();
+
+        log!("Hash byte array: {:?}", sha256_hash);
+        log!("Parsed from Hex Str Array: {:?}", b_arr);
+
+        assert!(sha256_hash == b_arr, "Error. Seed is not correct!!");
 
         let okey = format!("{}:{}", order.customer_account_id, order_id);
         self.finalize_complete_order(okey);
+
+        // TODO: Delete the order from this contract and generate a NFT for customer in the NFT Marketplace Contract.
 
         // Transfer funds back from marketplace contract to store
         let contract_id: AccountId = AccountId::from(&self.ft_contract_name);
@@ -163,7 +183,7 @@ impl DelugeBase {
 
     pub fn finalize_complete_order(&mut self, okey: String) {
         let mut order = self.orders.get(&okey).expect("Order does not exist");
-        
+
         order.status = OrderStatus::COMPLETED;
         self.orders.insert(&okey, &order);
     }
