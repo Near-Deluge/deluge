@@ -14,3 +14,6 @@ near create-account usdt.$ID --masterAccount $ID --initialBalance 1000
 
 echo "Create test accounts"
 near create-account dev0.$ID --masterAccount $ID --initialBalance 1000
+
+echo "Create rating account"
+near create-account marketplace_rating.$ID --masterAccount $ID --initialBalance 1000

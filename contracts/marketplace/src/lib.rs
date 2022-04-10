@@ -8,9 +8,6 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde_json::json;
 use near_sdk::{env, log, near_bindgen, setup_alloc, AccountId};
 
-use crate::internal_orders::*;
-use crate::internal_products::*;
-use crate::internal_stores::*;
 use crate::models::*;
 use crate::utils::*;
 

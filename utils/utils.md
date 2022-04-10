@@ -80,3 +80,19 @@ TODO
 near delete marketplace.test.near test.near
 # Create marketplace.test.near
 near create-account marketplace.test.near --masterAccount test.near --initialBalance 10
+
+
+# Rating Contract
+
+## create rating
+`npx ts-node rating_create.ts -a marketplace.test.near -c marketplace_rating.test.near -s fabrics-delivery.test.near -p product-1 -r 0 -b clifford.test.near`
+`npx ts-node rating_create.ts -a marketplace.test.near -c marketplace_rating.test.near -s fabrics-delivery.test.near -p product-1 -r 0 -b dev0.test.near`
+
+## view rating
+`npx ts-node rating_get_ratings.ts -a marketplace.test.near -c marketplace_rating.test.near -s fabrics-delivery.test.near -p product-1`
+
+## get owner
+`npx ts-node rating_get_ratings.ts -a marketplace.test.near -c marketplace_rating.test.near`
+
+## rate a product rating
+`npx ts-node rating_rate.ts -a clifford.test.near -c marketplace_rating.test.near -s fabrics-delivery.test.near -p product-1 -r 8 -i QwertyKeypad`
