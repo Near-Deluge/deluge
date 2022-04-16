@@ -1,0 +1,14 @@
+{
+    "address": "Square, NYC",
+    "name": "Fabrics Delivery Store Pro Max",
+    "lat_lng": {
+        "latitude": 33.651070,
+        "longitude": -109.347015
+    },
+    "website": "https://www.fabrics.x",
+    "logo": "https://www.fabrics.x/logo.png",
+    "country": "US",
+    "state": "States",
+    "city": "NYC",
+    "products": []
+}

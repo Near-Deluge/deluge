@@ -1,7 +1,3 @@
-use std::convert::TryInto;
-use std::fmt::format;
-use std::thread::AccessError;
-
 use near_sdk::env::sha256;
 use near_sdk::serde_json::json;
 use near_sdk::{AccountId, Gas, Promise};
@@ -56,7 +52,7 @@ impl DelugeBase {
         }
 
         // TODO: On successful cancellation of order, do increase the amount of inventory
-        // TODO: On successful cancellation of order, do delete it from storage. 
+        // TODO: On successful cancellation of order, do delete it from storage.
         //  Reason being as that order can be retrieved form the archival nodes as history will be maintained.
 
         // Can progress here only if OrderStatus is PENDING | SCHEDULED | INTRANSIT
@@ -165,15 +161,58 @@ impl DelugeBase {
             .map(|i| u8::from_str_radix(&o_pub_hash[i..i + 2], 16).unwrap())
             .collect();
 
-        log!("Hash byte array: {:?}", sha256_hash);
-        log!("Parsed from Hex Str Array: {:?}", b_arr);
 
         assert!(sha256_hash == b_arr, "Error. Seed is not correct!!");
 
         let okey = format!("{}:{}", order.customer_account_id, order_id);
-        self.finalize_complete_order(okey);
+        self.finalize_complete_order(okey.clone());
 
         // TODO: Delete the order from this contract and generate a NFT for customer in the NFT Marketplace Contract.
+        // TODO: Create a new NFT on NFT Marketplace
+        // TODO: Create a new Rating in Rating Contract
+
+        // There are two ways to do it. Either Create it from here and let the Other Smart Contract (Say Rating Smart Contract)
+        // Do a  callback to this contract to delete order from the storage. Same for the NFT Marketplace.
+
+        // Every Order can have multiple products, from the same store
+        // Need to create mutliple ratings from this contract to the rating contract for the multiple products.
+
+        let mut promises: Vec<u64> = vec![];
+
+        for item in order.payload.line_items {
+            let promise_index = env::promise_batch_create(self.rating_contract_name.clone());
+            let arg_str = json!({
+                "store_id": order.seller_id,
+                "product_id": item.product_id,
+                "rating": {
+                    "buyer": order.customer_account_id,
+                    "cid": "null".to_string(),
+                    "rate": 0 as u8,
+                    "status": "UNRATED"
+                }
+            })
+            .to_string();
+            env::promise_batch_action_function_call(
+                promise_index,
+                b"create_rating",
+                &arg_str.as_bytes(),
+                1,
+                BASIC_GAS,
+            );
+            promises.push(promise_index);
+
+            log!(
+                "Sending Promise to {} with argument str as : {}",
+                self.rating_contract_name,
+                arg_str
+            );
+        }
+
+        env::promise_and(&promises);
+        
+        // Once order is successfully registered for rating and in NFT Marketplace.
+        // remove order from marketplace to save storage.
+        self.orders.remove(&okey);
 
         // Transfer funds back from marketplace contract to store
         let contract_id: AccountId = AccountId::from(&self.ft_contract_name);

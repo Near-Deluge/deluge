@@ -20,34 +20,21 @@ console.log(config);
 async function execute() {
   const options = cla([
     {
-      name: "contractName",
-      alias: "c",
-      type: String,
-      defaultValue: "marketplace.test.near",
-    },
-    {
       name: "accountName",
       alias: "a",
       type: String,
       defaultValue: "fabrics-delivery.test.near",
     },
     {
-      name: "productId",
+      name: "contractName",
+      alias: "c",
+      type: String,
+      defaultValue: "marketplace.test.near",
+    },
+    {
+      name: "amount",
       alias: "p",
       type: String,
-      defaultValue: null,
-    },
-    {
-      name: "storeId",
-      alias: "s",
-      type: String,
-      defaultValue: null,
-    },
-    {
-      name: "file",
-      alias: "f",
-      type: String,
-      defaultValue: null,
     },
   ]);
 
@@ -66,7 +53,7 @@ async function initContract(contractName: string, account: Account) {
     {
       // name of contract you're connecting to
       viewMethods: [], // view methods do not change state but usually return a value
-      changeMethods: ["update_product"], // change methods modify state
+      changeMethods: ["storage_deposit"], // change methods modify state
     }
   );
 }
@@ -74,20 +61,17 @@ async function initContract(contractName: string, account: Account) {
 async function run(options: cla.CommandLineOptions) {
   const near = await connect(config);
   const account = await near.account(options.accountName);
-  console.log(await account.getAccountBalance());
+  console.log("getAccountBalance", await account.getAccountBalance());
   const contract: any = await initContract(options.contractName, account);
-  console.log("contract", { contract }, contract.update_product);
-  const prod_update = require(join(__dirname, options.file));
-  console.log(prod_update);
-  const response = await contract.update_product({
+  console.log("contract", { contract }, contract.storage_deposit);
+  const response = await contract.storage_deposit({
     args: {
-      pid: options.productId,
-      store_id: options.storeId,
-      ...prod_update,
+      account_id: options.accountName,
     },
-    meta: "update_product",
+    gas: ATTACHED_GAS,
+    amount: options.amount,
   });
-  console.log("response", { response });
+  console.log("response", response);
 }
 
 execute();

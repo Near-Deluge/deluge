@@ -1,9 +1,8 @@
-
-use crate::*;
+use crate::{internal_storage::STORAGE_ADD_STORE, *};
 
 #[near_bindgen]
 impl DelugeBase {
-    // TODO: Storage management, assert_one_yocto, etc.
+    
     #[payable]
     pub fn create_store(&mut self, store: Store) -> String {
         assert_one_yocto();
@@ -13,33 +12,26 @@ impl DelugeBase {
             "Store ID must match the account name"
         );
 
+        assert!(
+            STORAGE_ADD_STORE
+                <= self
+                    .storage_balance_of(env::predecessor_account_id())
+                    .into(),
+            "Make a storage Deposit of {} before creating a store!",
+            STORAGE_ADD_STORE,
+        );
+
         let existing_store = self.stores.get(&store.id);
         assert!(existing_store.is_none(), "Store with ID already exists");
 
         // TODO: Check if enought NEAR has been supplied for storage costs.
+        self.check_storage_requirement(store.clone());
 
         self.stores.insert(&store.id, &store);
 
         "OK".to_string()
     }
-    pub fn retrieve_store(self, store_id: String) -> Option<Store> {
-        let store = self.stores.get(&store_id);
-        store
-    }
-    pub fn list_stores(self) -> Vec<Store> {
-        self.stores.values().collect()
-    }
 
-    // pub id: String,
-    // pub lat_lng: LatLng,
-    // pub address: String,
-    // pub name: String,
-    // pub products: HashMap<String, Product>,
-    // pub website: String,
-    // pub logo: String, // CID or link to the hosted logo
-    // pub country : String,
-    // pub state: String,
-    // pub city: String
 
     pub fn update_store(
         &mut self,
@@ -53,7 +45,16 @@ impl DelugeBase {
         state: Option<String>,
         city: Option<String>,
     ) {
+
+        
         let mut store = self.stores.get(&id).expect("Store does not exist");
+         
+        assert!(
+            env::predecessor_account_id() == id,
+            "Only Owner of Store ID can edit it's own store details."
+        );
+
+        
         match name {
             Some(x) => store.name = x,
             None => {}
@@ -88,22 +89,26 @@ impl DelugeBase {
         }
 
         // TODO: Check if enough NEAR has been supplied for storage changes. (If lessen the storage then refund for the same).
+        self.check_storage_requirement(store.clone());
 
         self.stores.insert(&id, &store);
     }
 
     #[payable]
-    pub fn delete_store(&mut self, store_id: AccountId) -> String{
+    pub fn delete_store(&mut self, store_id: AccountId) -> String {
         assert_one_yocto();
         // TODO: Delete all products
         // 1. Delete all products from products
         // 2. (Optional) Delete all pending orders.
         // 3. Delete the store itself
-        // 4. Refund Storage
+
         let store = self.stores.get(&store_id).expect("Store doesn't exists.");
-        
+
         // Store deleting the store must be the deleting store one
-        assert!(env::predecessor_account_id() == store.id , "Unauthorized access");
+        assert!(
+            env::predecessor_account_id() == store.id,
+            "Unauthorized access"
+        );
 
         let mut pkeys = Vec::new();
         for pid in store.products {
@@ -116,12 +121,31 @@ impl DelugeBase {
 
         self.stores.remove(&store_id);
 
-        // TODO: Refund storage
+        // No need to refund storage as store can claim it back with the function `storage_withdraw`
         "OK".to_string()
-
     }
 
-    pub fn list_store_products(self, store_id: AccountId) -> Vec<Product> {
+    fn check_storage_requirement(&self, store: Store) {
+        assert!(
+            store.try_to_vec().unwrap().len() as u128 * STORAGE_PRICE_PER_BYTE
+                <= self
+                    .storage_balance_of(env::predecessor_account_id())
+                    .into(),
+            "Near is not Enough in Storage Staking to cover storage costs!!"
+        );
+    }
+
+    // View Functions
+
+    pub fn retrieve_store(self, store_id: String) -> Option<Store> {
+        let store = self.stores.get(&store_id);
+        store
+    }
+    pub fn list_stores(self) -> Vec<Store> {
+        self.stores.values().collect()
+    }
+
+    pub fn list_store_products(&self, store_id: AccountId) -> Vec<Product> {
         let store = self.stores.get(&store_id).expect("Store does not exist.");
         let mut prods = Vec::new();
         for pid in store.products {
@@ -235,7 +259,7 @@ mod tests {
         context.predecessor_account_id = "fabrics-delivery.test.near".to_string();
         testing_env!(context);
         let mut contract = DelugeBase::default();
-        let store: Store =  Store {
+        let store: Store = Store {
             id: "fabrics-delivery.test.near".to_string(),
             lat_lng: LatLng {
                 latitude: 43.651070,
@@ -248,7 +272,7 @@ mod tests {
             logo: "https://ramesh_store.com/logo.png".to_string(),
             website: "https://ramesh_store.com".to_string(),
             city: "South Delhi".to_string(),
-            products: vec![]
+            products: vec![],
         };
         let result = contract.create_store(store);
         assert_eq!(result, "OK".to_string());

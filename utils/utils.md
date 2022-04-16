@@ -16,6 +16,8 @@ Amount value is in absolute. No conversions.
 `npx ts-node marketplace_set_ft_contract_name.ts -c marketplace.test.near -a marketplace.test.near --ftContractName usdt.test.near`
 
 # setup rating smart contract name
+`npx ts-node marketplace_set_rating_contract_name.ts -c marketplace.test.near -a marketplace.test.near --ratingContractName marketplace_rating.test.near`
+
 # setup nft marketplace contract name
 
 ## create_store
@@ -28,7 +30,7 @@ Amount value is in absolute. No conversions.
 `npx ts-node marketplace_list_stores.ts -a fabrics-delivery.test.near`
 
 ## update_store
-TODO
+`npx ts-node marketplace_update_store.ts -c marketplace.test.near -a fabrics-delivery.test.near -p stores/update-fabrics-delivery.test.near.json`
 
 ## delete_store
 `npx ts-node marketplace_delete_store.ts  -c marketplace.test.near -a fabrics-delivery.test.near`
@@ -38,8 +40,7 @@ TODO
 `npx ts-node marketplace_create_product.ts -c marketplace.test.near -a fabrics-delivery.test.near -p products/fabrics-delivery.test.near/product-2.json`
 
 ## update_product
-## TODO: Update for product
-`npx ts-node marketplace_update_product.ts -c marketplace.test.near -a fabrics-delivery.test.near --productId product-1 --description "updated description!"`
+`npx ts-node marketplace_update_product.ts -c marketplace.test.near -a fabrics-delivery.test.near -p product-1 -s fabrics-delivery.test.near -f products/fabrics-delivery.test.near/update-product-1.json`
 
 ## retrieve_product
 `npx ts-node marketplace_retrieve_product.ts -c marketplace.test.near -a fabrics-delivery.test.near -i product-1`
@@ -76,6 +77,16 @@ TODO
 ## cancel_order
 `npx ts-node marketplace_cancel_order.ts -c marketplace.test.near -a fabrics-delivery.test.near -o order-1`
 
+
+## Storage Deposit
+`npx ts-node marketplace_storage_deposit.ts -c marketplace.test.near -a fabrics-delivery.test.near -p 100000000000000000000000`
+
+## Storage Withdraw
+`npx ts-node marketplace_storage_withdraw.ts -c marketplace.test.near -a fabrics-delivery.test.near`
+
+## Storage View
+`npx ts-node marketplace_storage_view.ts -c marketplace.test.near -a fabrics-delivery.test.near`
+
 # Delete contract account
 near delete marketplace.test.near test.near
 # Create marketplace.test.near
@@ -91,8 +102,10 @@ near create-account marketplace.test.near --masterAccount test.near --initialBal
 ## view rating
 `npx ts-node rating_get_ratings.ts -a marketplace.test.near -c marketplace_rating.test.near -s fabrics-delivery.test.near -p product-1`
 
-## get owner
+## get rating contract owner
 `npx ts-node rating_get_ratings.ts -a marketplace.test.near -c marketplace_rating.test.near`
 
 ## rate a product rating
 `npx ts-node rating_rate.ts -a clifford.test.near -c marketplace_rating.test.near -s fabrics-delivery.test.near -p product-1 -r 8 -i QwertyKeypad`
+
+

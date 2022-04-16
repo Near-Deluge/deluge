@@ -10,7 +10,8 @@ use near_sdk::{AccountId};
 pub enum StorageKey {
     Stores,
     Orders, 
-    Products, // ByOwnerId,
+    Products,
+    StorageDeposits // ByOwnerId,
             // ByOwnerIdInner { account_id_hash: CryptoHash },
             // ByNFTContractId,
             // ByNFTContractIdInner { account_id_hash: CryptoHash },
@@ -50,7 +51,7 @@ pub struct Product {
 }
 
 // Latitude and Longitude Structure.
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct LatLng {
     pub latitude: f64,
@@ -59,7 +60,7 @@ pub struct LatLng {
 
 // Store Structure and Store Details
 // Stores will have products nested inside it, will be easier to calculate storage costs.
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Store {
     pub id: String,

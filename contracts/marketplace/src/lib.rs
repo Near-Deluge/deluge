@@ -1,12 +1,12 @@
 // To conserve gas, efficient serialization is achieved through Borsh (http://borsh.io/)
 use assert_panic::assert_panic;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap, UnorderedSet};
+use near_sdk::collections::{UnorderedMap, UnorderedSet, LookupMap};
 use near_sdk::env::STORAGE_PRICE_PER_BYTE;
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde_json::json;
-use near_sdk::{env, log, near_bindgen, setup_alloc, AccountId};
+use near_sdk::{env, log, near_bindgen, setup_alloc, AccountId, Balance};
 
 use crate::models::*;
 use crate::utils::*;
@@ -14,6 +14,7 @@ use crate::utils::*;
 mod internal_orders;
 mod internal_products;
 mod internal_stores;
+mod internal_storage;
 mod models;
 mod utils;
 
@@ -26,6 +27,7 @@ pub struct DelugeBase {
     // Considering Products will be inside stores. (Maximum store product actively listed can be in range of 1000. So that much can be efficiently handled within reasonable bounds.)
     stores: UnorderedMap<String, Store>,
     products: UnorderedMap<String, Product>,
+    storage_deposits: LookupMap<AccountId, Balance>,
     ft_contract_name: AccountId,
     rating_contract_name: AccountId,
     nft_marketplace_name: AccountId,
@@ -41,6 +43,7 @@ impl Default for DelugeBase {
             ft_contract_name: AccountId::from(String::from("")),
             rating_contract_name: AccountId::from(String::from("")),
             nft_marketplace_name: AccountId::from(String::from("")),
+            storage_deposits: LookupMap::new(StorageKey::StorageDeposits)
         }
     }
 }
@@ -137,9 +140,11 @@ impl DelugeBase {
         );
 
         // TODO: validate msg deserializes to an Order struct
-        // TODO: return 0 - keep all funds - for now; or return funds if more than necessary are provided
+       
         // Order Id will be stored with ID formatted as {buyer_id}:{order_id}
+
         let okey = format!("{}:{}", order.customer_account_id, order.id);
+        
         // TODO: Check for order if already exists, reject it an return everything.
         match self.orders.get(&okey) {
             Some(val) => {

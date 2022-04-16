@@ -32,20 +32,8 @@ async function execute() {
       defaultValue: "fabrics-delivery.test.near",
     },
     {
-      name: "productId",
+      name: "payloadJsonFile",
       alias: "p",
-      type: String,
-      defaultValue: null,
-    },
-    {
-      name: "storeId",
-      alias: "s",
-      type: String,
-      defaultValue: null,
-    },
-    {
-      name: "file",
-      alias: "f",
       type: String,
       defaultValue: null,
     },
@@ -66,7 +54,7 @@ async function initContract(contractName: string, account: Account) {
     {
       // name of contract you're connecting to
       viewMethods: [], // view methods do not change state but usually return a value
-      changeMethods: ["update_product"], // change methods modify state
+      changeMethods: ["update_store"], // change methods modify state
     }
   );
 }
@@ -74,18 +62,14 @@ async function initContract(contractName: string, account: Account) {
 async function run(options: cla.CommandLineOptions) {
   const near = await connect(config);
   const account = await near.account(options.accountName);
+  const store = require(join(__dirname, options.payloadJsonFile));
   console.log(await account.getAccountBalance());
   const contract: any = await initContract(options.contractName, account);
-  console.log("contract", { contract }, contract.update_product);
-  const prod_update = require(join(__dirname, options.file));
-  console.log(prod_update);
-  const response = await contract.update_product({
-    args: {
-      pid: options.productId,
-      store_id: options.storeId,
-      ...prod_update,
-    },
-    meta: "update_product",
+  console.log("contract", { contract }, contract.update_store);
+  const response = await contract.update_store({
+    args: { id: options.accountName, ...store },
+    gas: ATTACHED_GAS,
+    meta: "update_store",
   });
   console.log("response", { response });
 }
