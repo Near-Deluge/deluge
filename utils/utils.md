@@ -109,3 +109,10 @@ near create-account marketplace.test.near --masterAccount test.near --initialBal
 `npx ts-node rating_rate.ts -a clifford.test.near -c marketplace_rating.test.near -s fabrics-delivery.test.near -p product-1 -r 8 -i QwertyKeypad`
 
 
+# NFT on Marketplace
+
+## Store a Contract 
+`npx ts-node marketplace_store_contract.ts -a fabrics-delivery.test.near -c marketplace.test.near -p ../contracts/NFT/res/non_fungible_token.wasm`
+
+## Get latest CodeHash
+`npx ts-node marketplace_get_latest_codehash.ts -a fabrics-delivery.test.near -c marketplace.test.near`

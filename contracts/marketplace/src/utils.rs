@@ -17,6 +17,13 @@ pub(crate) fn assert_one_yocto() {
     )
 }
 
+pub(crate) fn assert_at_least_one_yocto() {
+    assert!(
+        env::attached_deposit() >= 1,
+        "Requires attached deposit of atleast 1 yoctoNEAR",
+    )
+}
+
 const BASIC_GAS: Gas = 5_000_000_000_000;
 
 pub(crate) fn transfer_funds(contract_id: &AccountId, amount: U128, recipient_id: String) -> Promise {

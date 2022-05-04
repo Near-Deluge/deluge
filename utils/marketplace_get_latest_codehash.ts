@@ -31,12 +31,6 @@ async function execute() {
       type: String,
       defaultValue: "fabrics-delivery.test.near",
     },
-    {
-      name: "payloadJsonFile",
-      alias: "p",
-      type: String,
-      defaultValue: null,
-    },
   ]);
 
   try {
@@ -53,8 +47,8 @@ async function initContract(contractName: string, account: Account) {
     contractName,
     {
       // name of contract you're connecting to
-      viewMethods: [], // view methods do not change state but usually return a value
-      changeMethods: ["create_store"], // change methods modify state
+      viewMethods: ["get_latest_codehash"], // view methods do not change state but usually return a value
+      changeMethods: [], // change methods modify state
     }
   );
 }
@@ -62,15 +56,15 @@ async function initContract(contractName: string, account: Account) {
 async function run(options: cla.CommandLineOptions) {
   const near = await connect(config);
   const account = await near.account(options.accountName);
-  const store = require(join(__dirname, options.payloadJsonFile));
+
   console.log(await account.getAccountBalance());
   const contract: any = await initContract(options.contractName, account);
-  console.log("contract", { contract }, contract.create_store);
-  const response = await contract.create_store({
-    args: { store },
+  console.log("contract", { contract }, contract.get_latest_codehash);
+  const response = await contract.get_latest_codehash({
+    args: { },
     gas: ATTACHED_GAS,
-    amount: "5000000000000000000000000",
-    meta: "create_store",
+    amount: "1",
+    meta: "delete_store",
   });
   console.log("response", { response });
 }

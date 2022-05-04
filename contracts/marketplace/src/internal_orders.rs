@@ -192,6 +192,7 @@ impl DelugeBase {
                 }
             })
             .to_string();
+
             env::promise_batch_action_function_call(
                 promise_index,
                 b"create_rating",
@@ -199,6 +200,7 @@ impl DelugeBase {
                 1,
                 BASIC_GAS,
             );
+            
             promises.push(promise_index);
 
             log!(

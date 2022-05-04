@@ -1,11 +1,14 @@
 use crate::{internal_storage::STORAGE_ADD_STORE, *};
+use near_contract_standards::non_fungible_token::metadata::{
+    NFTContractMetadata, NonFungibleTokenMetadataProvider, TokenMetadata, NFT_METADATA_SPEC,
+};
 
 #[near_bindgen]
 impl DelugeBase {
-    
     #[payable]
     pub fn create_store(&mut self, store: Store) -> String {
-        assert_one_yocto();
+        assert_at_least_one_yocto();
+
         // check unique storeid
         assert!(
             env::predecessor_account_id() == store.id,
@@ -27,11 +30,53 @@ impl DelugeBase {
         // TODO: Check if enought NEAR has been supplied for storage costs.
         self.check_storage_requirement(store.clone());
 
-        self.stores.insert(&store.id, &store);
+        // Typical Usecase: Creates a New Store -> Generates a new NFT Contract for that store
+
+        // Account IDs are in format of shop_name_deluge
+
+        let signer = env::signer_account_id();
+        let signer_name: Vec<&str> = signer.split(".").collect();
+        log!("signer_name: {}", signer_name[0]);
+        let account_id: AccountId = format!("{}.{}", signer_name[0], env::current_account_id())
+            .parse()
+            .unwrap();
+        log!("Account Id to be created: {}", account_id);
+
+        let callback_args = serde_json::to_vec(&json!({
+            "account_id": account_id,
+            "attached_deposit": U128(env::attached_deposit()),
+            "predecessor_account_id": env::predecessor_account_id(),
+            "store": store
+        }))
+        .expect("Failed to serialize");
+
+        let meta = NFTContractMetadata {
+            spec: NFT_METADATA_SPEC.to_string(),
+            name: store.name.to_string(),
+            symbol: store.id.to_string(),
+            icon: Some(store.logo.to_string()),
+            base_uri: None,
+            reference: None,
+            reference_hash: None,
+        };
+
+        let args = serde_json::to_vec(&json!({
+            "owner_id": env::current_account_id(),
+            "metadata": &meta
+        }))
+        .expect("Failed to serialize `new` args");
+
+        self.create_contract(
+            self.get_latest_codehash(),
+            account_id,
+            b"new",
+            &args,
+            b"on_create",
+            &callback_args,
+        );
 
         "OK".to_string()
     }
-
 
     pub fn update_store(
         &mut self,
@@ -45,16 +90,13 @@ impl DelugeBase {
         state: Option<String>,
         city: Option<String>,
     ) {
-
-        
         let mut store = self.stores.get(&id).expect("Store does not exist");
-         
+
         assert!(
             env::predecessor_account_id() == id,
             "Only Owner of Store ID can edit it's own store details."
         );
 
-        
         match name {
             Some(x) => store.name = x,
             None => {}

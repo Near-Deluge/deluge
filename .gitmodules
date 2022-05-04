@@ -1,6 +1,6 @@
 [submodule "contracts/FT"]
 	path = contracts/FT
-	url = git@github.com:near-smart-market/FT
+	url = git@github.com:Near-Deluge/FT
 [submodule "contracts/NFT"]
 	path = contracts/NFT
 	url = git@github.com:Near-Deluge/NFT.git
