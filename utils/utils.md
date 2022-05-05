@@ -1,5 +1,8 @@
 # Utils - how to use
 
+## nft_tokens_of
+`npx ts-node nft_tokens_of.ts -c fabrics-delivery.marketplace.test.near -a clifford.test.near`
+
 ## ft_balance_of
 `npx ts-node ft_balance_of.ts -c usdt.test.near -a dev0.test.near`
 

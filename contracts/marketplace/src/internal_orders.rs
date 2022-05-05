@@ -1,10 +1,14 @@
+use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use near_sdk::env::sha256;
 use near_sdk::serde_json::json;
 use near_sdk::{AccountId, Gas, Promise};
+use near_sdk::env;
 
 use crate::*;
 
 const BASIC_GAS: Gas = 5_000_000_000_000;
+
+const ONE_TENTH_NEAR: Balance = 100_000_000_000_000_000_000_000;
 
 #[near_bindgen]
 impl DelugeBase {
@@ -161,7 +165,6 @@ impl DelugeBase {
             .map(|i| u8::from_str_radix(&o_pub_hash[i..i + 2], 16).unwrap())
             .collect();
 
-
         assert!(sha256_hash == b_arr, "Error. Seed is not correct!!");
 
         let okey = format!("{}:{}", order.customer_account_id, order_id);
@@ -179,7 +182,7 @@ impl DelugeBase {
 
         let mut promises: Vec<u64> = vec![];
 
-        for item in order.payload.line_items {
+        for item in &order.payload.line_items {
             let promise_index = env::promise_batch_create(self.rating_contract_name.clone());
             let arg_str = json!({
                 "store_id": order.seller_id,
@@ -200,7 +203,7 @@ impl DelugeBase {
                 1,
                 BASIC_GAS,
             );
-            
+
             promises.push(promise_index);
 
             log!(
@@ -211,7 +214,60 @@ impl DelugeBase {
         }
 
         env::promise_and(&promises);
-        
+
+        // TODO: Create a NFT Token on Shop Contract for Each Ordered Item.
+        // Since each order will have only one seller, we can create a promise on account once and then call mint multiple times.
+
+        let mut nft_promises: Vec<u64> = vec![];
+        let seller = order.seller_id.clone();
+        let seller_acc_name = seller.split(".").collect::<Vec<&str>>()[0];
+        let promise_index_n =
+            env::promise_batch_create(get_formatted_nft_account_name(seller_acc_name.to_string()));
+
+        for item in &order.payload.line_items {
+            // Token IDs will be in form of order_id:seller_id:product_id
+            let arg_str = json!({
+                "token_id": format!("{}:{}:{}",order.id, order.seller_id, item.product_id),
+                "receiver_id": order.customer_account_id,
+                "token_metadata": TokenMetadata { 
+                    title: Some(format!("Order:{}", order.id)), 
+                    description: Some(format!("Product Id: {} | Order Status:{:?}", item.product_id, order.status)), 
+                    media: Some(order.cid.to_owned()), 
+                    media_hash: None, 
+                    copies: Some(1), 
+                    issued_at: Some(env::block_timestamp().to_string()), 
+                    expires_at: Some("never".to_string()), 
+                    starts_at: Some(env::block_timestamp().to_string()), 
+                    updated_at: Some("never".to_string()), 
+                    extra: None, 
+                    reference: None, 
+                    reference_hash: None 
+                }
+            })
+            .to_string();
+
+            // Need to attach some near to cover for minting cost on Contract
+            // TODO: Think about to mitigate this to other parteis then on base contract
+            // For now supplying 0.1 N to `nft_mint` call
+            env::promise_batch_action_function_call(
+                promise_index_n,
+                b"nft_mint",
+                &arg_str.as_bytes(),
+                ONE_TENTH_NEAR,
+                BASIC_GAS,
+            );
+
+            nft_promises.push(promise_index_n);
+
+            log!(
+                "Sending Promise to {} with argument str as : {}",
+                self.rating_contract_name,
+                arg_str
+            );
+        }
+
+        env::promise_and(&nft_promises);
+
         // Once order is successfully registered for rating and in NFT Marketplace.
         // remove order from marketplace to save storage.
         self.orders.remove(&okey);

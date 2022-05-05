@@ -24,6 +24,10 @@ pub(crate) fn assert_at_least_one_yocto() {
     )
 }
 
+pub(crate) fn get_formatted_nft_account_name(acc_name: String) -> AccountId {
+    format!("{}.{}", acc_name, env::current_account_id())
+}
+
 const BASIC_GAS: Gas = 5_000_000_000_000;
 
 pub(crate) fn transfer_funds(contract_id: &AccountId, amount: U128, recipient_id: String) -> Promise {

@@ -37,9 +37,7 @@ impl DelugeBase {
         let signer = env::signer_account_id();
         let signer_name: Vec<&str> = signer.split(".").collect();
         log!("signer_name: {}", signer_name[0]);
-        let account_id: AccountId = format!("{}.{}", signer_name[0], env::current_account_id())
-            .parse()
-            .unwrap();
+        let account_id: AccountId = get_formatted_nft_account_name(signer_name[0].to_string());
         log!("Account Id to be created: {}", account_id);
 
         let callback_args = serde_json::to_vec(&json!({
