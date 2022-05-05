@@ -1,0 +1,9 @@
+.flex-main-wrapper {
+    padding-top: 200px;
+}
+
+@media screen and (max-width: 600px) {
+    .flex-main-wrapper {
+        padding-top: 0px;
+    }
+}
