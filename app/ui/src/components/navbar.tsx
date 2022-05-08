@@ -11,6 +11,7 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  Tooltip,
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { useMediaQuery } from "@mui/material";
@@ -20,10 +21,14 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 import HomeIcon from "@mui/icons-material/Home";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
-
+import {
+  CheckRounded,
+  LoginOutlined,
+  LogoutOutlined,
+} from "@mui/icons-material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
-import LogoutIcon from '@mui/icons-material/Logout';
-import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
+import LogoutIcon from "@mui/icons-material/Logout";
+import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
 
 // Images Imports
 import img from "../assets/imgs/logos/logo_full.png";
@@ -31,18 +36,58 @@ import logo from "../assets/imgs/logos/logo.png";
 import "./navbar.css";
 
 import AppsIcon from "@mui/icons-material/Apps";
+import { ONE_NEAR, CONTRACT_NAME } from "../config";
+import BN from "big.js";
+import { useSelector } from "react-redux";
 
-const Navbar = () => {
+type INavbar = {
+  balance: number;
+  wallet: any;
+  user: any;
+  base_contract: any;
+};
+
+const Navbar: React.FC<INavbar> = ({
+  balance,
+  user,
+  base_contract,
+  wallet,
+}) => {
   const matches = useMediaQuery("(max-width: 600px)");
-  const [isOpen, setOpen] = useState(false);
+  const [walletDetails, setWalletDetails] = useState<any>({});
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+
+  const curUserState = useSelector((state: any) => state.contractSlice.user);
+
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  React.useEffect(() => {
+    (async () => {
+      const bal = await wallet.account().getAccountBalance();
+      setWalletDetails({
+        ...walletDetails,
+        ...bal,
+      });
+    })();
+  }, []);
+
+  const viewBal = balance / 10 ** 8;
+
+  const handleBuy = () => {
+    console.log(ONE_NEAR);
+    console.log(new BN(ONE_NEAR).toFixed(0));
+    base_contract.buy_ft({
+      args: {},
+      amount: new BN(ONE_NEAR).toFixed(0).toString(),
+    });
+  };
+
   return (
     <Paper
       sx={{
@@ -64,7 +109,7 @@ const Navbar = () => {
           <React.Fragment>
             <Grid item xs={6} sm={2} display="flex" justifyContent={"flex-end"}>
               <IconButton onClick={handleClick}>
-                {isOpen ? (
+                {open ? (
                   <CloseIcon color="error" fontSize="large" />
                 ) : (
                   <AppsIcon color="primary" fontSize="large" />
@@ -74,7 +119,7 @@ const Navbar = () => {
           </React.Fragment>
         ) : (
           <React.Fragment>
-            <Grid item xs={12} sm={8} className="grid_wrapper wrapper-2">
+            <Grid item xs={12} sm={6} className="grid_wrapper wrapper-2">
               <div className="nav-link">
                 <Link to="/">
                   <Typography fontWeight={800} component={"p"}>
@@ -97,21 +142,86 @@ const Navbar = () => {
                 </Link>
               </div>
               <div className="nav-link">
-                <Link to="/add_store">
-                  <Typography fontWeight={800} component={"p"}>
-                    Add Store{" "}
-                  </Typography>{" "}
-                </Link>
+                {curUserState.store === null ? (
+                  <Link to="/add_store">
+                    <Typography fontWeight={800} component={"p"}>
+                      Create Store{" "}
+                    </Typography>{" "}
+                  </Link>
+                ) : (
+                  <Link to="/store">
+                    <Typography fontWeight={800} component={"p"}>
+                      Your Store
+                    </Typography>{" "}
+                  </Link>
+                )}
               </div>
             </Grid>
             <Grid
               item
               xs={12}
-              sm={2}
+              sm={4}
               className="grid_wrapper wrapper-3"
               sx={{ justifyContent: "flex-end" }}
             >
-              <Button variant="contained">Create</Button>
+              {wallet.isSignedIn() && <CheckRounded color="success" />}
+              {wallet.isSignedIn() ? (
+                <IconButton
+                  onClick={() => {
+                    wallet.signOut();
+                  }}
+                >
+                  <Tooltip title="Logout">
+                    <LogoutOutlined />
+                  </Tooltip>
+                </IconButton>
+              ) : (
+                <IconButton
+                  onClick={() => {
+                    wallet.requestSignIn({ contractId: CONTRACT_NAME });
+                  }}
+                >
+                  <Tooltip title="Logout">
+                    <LoginOutlined />
+                  </Tooltip>
+                </IconButton>
+              )}
+              <div style={{ marginLeft: 10 }}>
+                <Typography color="primary">{user && user.accountId} </Typography>
+                <Tooltip title="1 N = 100 DLGT">
+                  <Typography>
+                    {walletDetails.total
+                      ? (walletDetails.total / ONE_NEAR).toFixed(2)
+                      : "0"}{" "}
+                    Near
+                  </Typography>
+                </Tooltip>
+              </div>
+
+              <MenuItem
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                }}
+                onClick={handleBuy}
+              >
+                <ListItemIcon>
+                  <img src={logo} style={{ width: "25px" }} />
+                </ListItemIcon>
+                <div style={{ margin: "0px 30px 0px 5px" }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={"bold"}
+                    sx={{ marginBottom: "-10px" }}
+                  >
+                    {viewBal}
+                  </Typography>
+                  <Typography variant="caption">DLGT</Typography>
+                </div>
+                <div>
+                  <AddCircleIcon color="primary" />
+                </div>
+              </MenuItem>
             </Grid>
           </React.Fragment>
         )}
@@ -195,36 +305,55 @@ const Navbar = () => {
               display: "flex",
               justifyContent: "space-between",
             }}
+            onClick={handleBuy}
           >
             <ListItemIcon>
               <img src={logo} style={{ width: "25px" }} />
             </ListItemIcon>
-            <div>
+            <div style={{ margin: "0px 30px 0px 5px" }}>
               <Typography
                 variant="h6"
                 fontWeight={"bold"}
                 sx={{ marginBottom: "-10px" }}
               >
-                345.56
+                {viewBal}
               </Typography>
-              <Typography variant="caption">Deluge Tokens</Typography>
+              <Typography variant="caption">DLGT</Typography>
             </div>
             <div>
               <AddCircleIcon color="primary" />
             </div>
           </MenuItem>
+
+          <MenuItem>
+            {wallet.isSignedIn() && <CheckRounded color="success" />}
+
+            <div style={{ marginLeft: 10 }}>
+              <Typography color="primary">{user && user.accountId} </Typography>
+              <Tooltip title="1 N = 100 DLGT">
+                <Typography>
+                  {walletDetails.total
+                    ? (walletDetails.total / ONE_NEAR).toFixed(2)
+                    : "0"}{" "}
+                  Near
+                </Typography>
+              </Tooltip>
+            </div>
+          </MenuItem>
           <Divider />
+          <Link to={"/"}>
+            <MenuItem>
+              <ListItemIcon>
+                <HomeIcon color="primary" />
+              </ListItemIcon>
+              Home
+            </MenuItem>
+          </Link>
           <MenuItem>
             <ListItemIcon>
-              <HomeIcon color="primary" />
+              <AccountCircleIcon color="primary" />
             </ListItemIcon>
-            Home
-          </MenuItem>
-          <MenuItem>
-          <ListItemIcon>
-              <AccountCircleIcon color="primary"/>
-            </ListItemIcon>
-             Account
+            Account
           </MenuItem>
           <Divider />
           <MenuItem>
@@ -233,30 +362,54 @@ const Navbar = () => {
             </ListItemIcon>
             Cart
           </MenuItem>
-          <MenuItem>
-            <ListItemIcon>
-              <AddBusinessIcon color="primary" />
-            </ListItemIcon>
-            Add Store
-          </MenuItem>
-          <MenuItem>
-            <ListItemIcon>
-              <QueryStatsIcon color="primary" />
-            </ListItemIcon>
-            Store Stats
-          </MenuItem>
-          <MenuItem>
-            <ListItemIcon>
-              <ShoppingCartCheckoutIcon color="primary" />
-            </ListItemIcon>
-            Pending Orders
-          </MenuItem>
-          <MenuItem>
-            <ListItemIcon>
-              <LogoutIcon color="primary" />
-            </ListItemIcon>
-            Logout
-          </MenuItem>
+          {curUserState === null ? (
+            <Link to={"/add_store"}>
+              <MenuItem>
+                <ListItemIcon>
+                  <AddBusinessIcon color="primary" />
+                </ListItemIcon>
+                Add Store
+              </MenuItem>
+            </Link>
+          ) : (
+            [
+              <Link to={"/store"}>
+                <MenuItem>
+                  <ListItemIcon>
+                    <AddBusinessIcon color="primary" />
+                  </ListItemIcon>
+                  View Store
+                </MenuItem>
+              </Link>,
+              <MenuItem>
+                <ListItemIcon>
+                  <QueryStatsIcon color="primary" />
+                </ListItemIcon>
+                Store Stats
+              </MenuItem>,
+              <MenuItem>
+                <ListItemIcon>
+                  <ShoppingCartCheckoutIcon color="primary" />
+                </ListItemIcon>
+                Pending Orders
+              </MenuItem>,
+            ]
+          )}
+          {wallet.isSignedIn() ? (
+            <MenuItem>
+              <ListItemIcon>
+                <LogoutIcon color="primary" />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
+          ) : (
+            <MenuItem>
+              <ListItemIcon>
+                <LogoutIcon color="primary" />
+              </ListItemIcon>
+              Login
+            </MenuItem>
+          )}
         </Menu>
       </Grid>
     </Paper>

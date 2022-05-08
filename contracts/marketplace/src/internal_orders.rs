@@ -278,7 +278,7 @@ impl DelugeBase {
         "OK".to_string()
     }
 
-    pub fn finalize_complete_order(&mut self, okey: String) {
+    fn finalize_complete_order(&mut self, okey: String) {
         let mut order = self.orders.get(&okey).expect("Order does not exist");
 
         order.status = OrderStatus::COMPLETED;

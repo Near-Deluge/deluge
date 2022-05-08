@@ -7,7 +7,7 @@ use near_sdk::env::STORAGE_PRICE_PER_BYTE;
 use near_sdk::json_types::{Base58CryptoHash, U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde_json::{self, json};
-use near_sdk::{env, log, near_bindgen, setup_alloc, AccountId, Balance, CryptoHash, Gas, Promise};
+use near_sdk::{env, log, near_bindgen, setup_alloc, AccountId, Balance, CryptoHash, Gas, Promise, PanicOnDefault};
 
 use crate::models::*;
 use crate::utils::*;
@@ -32,7 +32,7 @@ const NFT_CONTRACT_INITIAL_CODE: &[u8] = include_bytes!("../../NFT/res/non_fungi
 // Structs in Rust are similar to other languages, and may include impl keyword as shown below
 // Note: the names of the structs are not important when calling the smart contract, but the function names are
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct DelugeBase {
     orders: UnorderedMap<String, Order>,
     // Considering Products will be inside stores. (Maximum store product actively listed can be in range of 1000. So that much can be efficiently handled within reasonable bounds.)
@@ -48,12 +48,12 @@ pub struct DelugeBase {
 
 // TODO: Store the NFT .wasm to deploy.
 // Store the key as hash for the active wasm file
-//
 
-impl Default for DelugeBase {
-    fn default() -> Self {
-        // We set default storages here.
+#[near_bindgen]
+impl DelugeBase {
 
+    #[init]
+    pub fn new() -> Self{
         let mut contract = Self {
             orders: UnorderedMap::new(StorageKey::Orders),
             stores: UnorderedMap::new(StorageKey::Stores),
@@ -68,10 +68,6 @@ impl Default for DelugeBase {
         contract.internal_store_initial_contract();
         contract
     }
-}
-
-#[near_bindgen]
-impl DelugeBase {
 
     // Interna Function to store the NFT Contract data Initially    
     fn internal_store_initial_contract(&mut self) {
@@ -114,10 +110,13 @@ impl DelugeBase {
     // NFTs
 
     // Stores the Contract in this Contract
+    // TODO: This is not working fix this.
     #[payable]
     pub fn store_contract(&mut self) -> String {
         // Check for owner
         // assert_eq!(env::predecessor_account_id(), env::current_account_id());
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
+
         assert_one_yocto();
         
         let raw_code = env::input().expect("NO INPUT ATTACHED");
@@ -136,6 +135,7 @@ impl DelugeBase {
 
     /// Delete code from the contract.
     pub fn delete_contract(&self, code_hash: Base58CryptoHash) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
         let code_hash: CryptoHash = code_hash.into();
         env::storage_remove(&code_hash);
     }
@@ -212,6 +212,7 @@ impl DelugeBase {
     ) -> bool {
         if near_sdk::is_promise_success() {
             self.nfts.insert(&account_id);
+            // TODO: Flush the products before pushing into the storage as initially store would have 0 Products.
             self.stores.insert(&store.id, &store);
             true
         } else {

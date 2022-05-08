@@ -1,7 +1,15 @@
-import { configureStore, ThunkAction, Action } from "@reduxjs/toolkit";
+import { configureStore, ThunkAction, Action, getDefaultMiddleware } from "@reduxjs/toolkit";
+
+// Imports Reducers
+import contractSlice from "./slices/contract.slice";
+import storeSlice from "./slices/store.slice";
 
 export const store = configureStore({
-  reducer: {},
+  reducer: {
+    contractSlice,
+    storeSlice
+  },
+
 });
 
 export type AppDispatch = typeof store.dispatch;
