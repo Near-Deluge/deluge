@@ -19,6 +19,7 @@
     "react": "latest",
     "react-dom": "latest",
     "react-horizontal-scrolling-menu": "^2.7.2",
+    "react-jdenticon": "^1.0.0",
     "react-redux": "^8.0.1",
     "react-router-dom": "6",
     "react-scripts": "latest",

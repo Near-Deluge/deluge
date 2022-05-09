@@ -20,9 +20,13 @@ import { initializeStableCoin, WebContext } from ".";
 import Store from "./pages/store";
 import AddStore from "./pages/addStore";
 import UpdateStore from "./components/stores/updateStore";
-import { addOneCidUserDetails, setUserProducts } from "./redux/slices/products.slice";
+import {
+  addOneCidUserDetails,
+  setUserProducts,
+} from "./redux/slices/products.slice";
 import { Product } from "./utils/interface";
 import { useContext } from "react";
+import ProductView from "./pages/product";
 
 // TODO: Fix this to concrete types from any
 type IApp = {
@@ -73,7 +77,7 @@ export default function App({
     products.forEach(async (item) => {
       const res = await instance.get(item.cid);
       const files = await res?.files();
-      if(files){
+      if (files) {
         let textData = await files[0].text();
         let parseObject = JSON.parse(textData);
         dispatcher(addOneCidUserDetails(parseObject));
@@ -106,7 +110,6 @@ export default function App({
   };
 
   React.useEffect(() => {
-    
     dispatcher(setUser(currentUser));
     initStableCoin();
     checkStore();
@@ -136,6 +139,7 @@ export default function App({
             path="/store"
             element={<Store base_contract={base_contract} wallet={wallet} />}
           />
+          <Route path="/products/:cid" element={<ProductView />} />
         </Routes>
       </Container>
       <Footer />

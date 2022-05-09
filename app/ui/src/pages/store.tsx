@@ -8,6 +8,7 @@ import {
   CircularProgress,
   Tooltip,
   IconButton,
+  Box,
 } from "@mui/material";
 import React from "react";
 import { useSelector } from "react-redux";
@@ -16,6 +17,8 @@ import Collapse from "@mui/material/Collapse";
 
 import AddProduct from "../components/products/addProduct";
 import { Add, Close } from "@mui/icons-material";
+import { Product } from "../utils/interface";
+import StoreProductCard from "../components/products/store_product_card";
 
 type IStore = {
   base_contract: any;
@@ -31,8 +34,6 @@ const Store: React.FC<IStore> = ({ base_contract, wallet }) => {
     (state: any) => state.productSlice.user_cid_details
   );
   const [isAddProductOpen, setAddProductOpen] = React.useState(false);
-
-  console.log(userProducts, userCids);
 
   return (
     <Container>
@@ -110,6 +111,20 @@ const Store: React.FC<IStore> = ({ base_contract, wallet }) => {
       </Grid>
       <Grid container>
         <Typography variant="h5">Your Listed Products</Typography>
+        <Grid container>
+          {userProducts.map((item: Product) => {
+            return (
+              <StoreProductCard
+                cid={item.cid}
+                inventory={item.inventory}
+                name={item.name}
+                pid={item.pid}
+                price={item.price}
+                key={item.cid}
+              />
+            );
+          })}
+        </Grid >
       </Grid>
     </Container>
   );

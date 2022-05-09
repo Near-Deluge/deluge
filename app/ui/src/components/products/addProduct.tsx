@@ -20,18 +20,18 @@ import { Box } from "@mui/system";
 import BN from "big.js";
 import InventoryIcon from "@mui/icons-material/Inventory";
 
-const length_unit = [
+export const length_unit = [
   { value: "metere", symbol: "M" },
   { value: "feet", symbol: "ft" },
   { value: "inch", symbol: "in" },
 ];
-const weight_unit = [
+export const weight_unit = [
   { value: "grams", symbol: "gm" },
   { value: "kilograms", symbol: "kg" },
   { value: "ounce", symbol: "ounce" },
   { value: "pound", symbol: "pound" },
 ];
-const size = [
+export const size = [
   { value: "large", symbol: "L" },
   { value: "extra large", symbol: "XL" },
   { value: "small", symbol: "S" },
@@ -39,7 +39,7 @@ const size = [
   { value: "not_applicable", symbol: "N/A" },
 ];
 
-const initProductStorage: Product_Storage = {
+export const initProductStorage: Product_Storage = {
   name: "",
   product_id: "",
   description: "",
