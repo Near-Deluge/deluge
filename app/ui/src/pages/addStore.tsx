@@ -9,6 +9,7 @@ import { useSelector } from "react-redux";
 import { Store } from "../utils/interface";
 import { ONE_NEAR } from "../config";
 import BN from "big.js";
+import { useNavigate } from "react-router-dom";
 
 type IAddStore = {
   base_contract: any;
@@ -18,9 +19,15 @@ type IAddStore = {
 const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
   const curStore = useSelector((state: any) => state.storeSlice.currentStore);
   const user = useSelector((state: any) => state.contractSlice.user);
-
+  const navigation = useNavigate();
   const [local, setLocal] = React.useState({
     storage_deposit: 0,
+  });
+
+  React.useEffect(() => {
+    if (user.store) {
+      navigation("/store", { replace: true });
+    }
   });
 
   React.useEffect(() => {
@@ -75,7 +82,8 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
           <React.Fragment>
             <Typography gutterBottom textAlign={"center"}>
               {" "}
-              Current Storage Deposit: {(local.storage_deposit / ONE_NEAR).toFixed(2)} Near
+              Current Storage Deposit:{" "}
+              {(local.storage_deposit / ONE_NEAR).toFixed(2)} Near
             </Typography>
             <CreateStore handleSubmit={handleSubmit} />
           </React.Fragment>

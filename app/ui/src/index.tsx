@@ -15,22 +15,15 @@ import * as nearAPI from "near-api-js";
 import { ConnectConfig, WalletConnection } from "near-api-js";
 import { ContractMethods } from "near-api-js/lib/contract";
 import { RATING_CONTRACT_NAME, STABLECOIN_CONTRACT_NAME } from "./config";
+import { Web3Storage } from "web3.storage";
 
-// export const initializeWalletConnection = async () => {
-//   const keyStore = new nearAPI.keyStores.BrowserLocalStorageKeyStore();
-//   let conf = getConfig("testnet");
+// TODO: Remove it before deploying to world
+const WEB3_STORAGE_API =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDE5RGJmYjE1NzhCYTE5NTJDMkJmMDYyN2VFOThiNUYwOTliMjVGM0EiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2NDk2NzAzMDgyODAsIm5hbWUiOiJEZWx1Z2UifQ.VrlPfPIJVvhCTxyjv40k3aLcTNtRaVUDoyjtP34CXb0";
 
-//   // Initializing connection to the NEAR testnet
-//   const near = await nearAPI.connect({
-//     keyStore,
-//     headers: {},
-//     networkId: conf.networkId,
-//     nodeUrl: conf.nodeUrl,
-//   });
-
-//   const walletConnection = new nearAPI.WalletConnection(near, null);
-//   return walletConnection;
-// };
+export const initWeb3Storage = async () => {
+  return new Web3Storage({ token: WEB3_STORAGE_API });
+};
 
 export const initializeStableCoin = async (
   walletConnection: WalletConnection
@@ -94,7 +87,7 @@ const initializeContract = async () => {
   } else {
     walletConnection.requestSignIn({
       contractId: nearConfig.contractName,
-    })
+    });
   }
 
   // Initializing our contract APIs by contract name and configuration
@@ -155,23 +148,35 @@ const initializeContract = async () => {
     walletConnection,
   };
 };
+// Web3 Context Creation
+const web3Instance = initWeb3Storage();
+export const WebContext = React.createContext(web3Instance);
 
 initializeContract().then(
-  ({ base_contract, currentUser, nearConfig, walletConnection, dlgt_contract, rating_contract }) => {
+  ({
+    base_contract,
+    currentUser,
+    nearConfig,
+    walletConnection,
+    dlgt_contract,
+    rating_contract,
+  }) => {
     ReactDOM.render(
       <Provider store={store}>
         <BrowserRouter>
           <ThemeProvider theme={theme}>
             {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
             <CssBaseline />
-            <App
-              rating_contract={rating_contract}
-              dlgt_contract={dlgt_contract}
-              base_contract={base_contract}
-              currentUser={currentUser}
-              nearConfig={nearConfig}
-              wallet={walletConnection}
-            />
+            <WebContext.Provider value={web3Instance}>
+              <App
+                rating_contract={rating_contract}
+                dlgt_contract={dlgt_contract}
+                base_contract={base_contract}
+                currentUser={currentUser}
+                nearConfig={nearConfig}
+                wallet={walletConnection}
+              />
+            </WebContext.Provider>
           </ThemeProvider>
         </BrowserRouter>
       </Provider>,

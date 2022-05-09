@@ -3,11 +3,13 @@ import { configureStore, ThunkAction, Action, getDefaultMiddleware } from "@redu
 // Imports Reducers
 import contractSlice from "./slices/contract.slice";
 import storeSlice from "./slices/store.slice";
+import productSlice from "./slices/products.slice";
 
 export const store = configureStore({
   reducer: {
     contractSlice,
-    storeSlice
+    storeSlice,
+    productSlice
   },
 
 });

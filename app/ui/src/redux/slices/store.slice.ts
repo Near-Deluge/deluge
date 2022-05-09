@@ -4,7 +4,6 @@ import { Store } from "../../utils/interface";
 
 type StoreState = {
   currentStore: Store;
-  updateStore: Store;
   allStore: Array<Store>;
 };
 

@@ -23,7 +23,8 @@
     "react-router-dom": "6",
     "react-scripts": "latest",
     "stream-browserify": "^3.0.0",
-    "typescript": "latest"
+    "typescript": "latest",
+    "web3.storage": "^4.2.0"
   },
   "scripts": {
     "start": "react-scripts start",
