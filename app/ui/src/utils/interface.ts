@@ -20,12 +20,12 @@ export interface Store {
 }
 
 export interface Product {
-  pid: String;
+  pid: string;
   cid: CIDString;
   inventory: Number;
-  name: String;
+  name: string;
   // Price will be a string as U128 expects a string
-  price: String;
+  price: string;
 }
 
 // Product Details for Storing
@@ -54,4 +54,43 @@ export interface Product_Storage {
   expected_delivery: String;
   available_in: Array<String>;
   additiional_detials?: any;
+}
+
+// Storage Specification for Ordering Details
+export interface Order_Specification {
+  address: String;
+  district: String;
+  country: String;
+  pincode: String;
+  phone?: String;
+  email: String;
+}
+
+
+export enum Status {
+  PENDING,
+  INTRANSIT,
+  COMPLETED,
+  SCHEDULED,
+  CANCELLED,
+}
+
+export interface LineItem {
+  count: Number;
+  product_id: string;
+  // Price will be a string as U128 expects a string
+  price: string;
+}
+
+export interface Order {
+  id: string;
+  customer_account_id: string;
+  seller_id: string;
+  status: Status;
+  cid: CIDString;
+  customer_secret: string;
+  payload: {
+    amount: string;
+    line_count: Array<LineItem>;
+  };
 }

@@ -20,12 +20,9 @@ import { Add, Close } from "@mui/icons-material";
 import { Product } from "../utils/interface";
 import StoreProductCard from "../components/products/store_product_card";
 
-type IStore = {
-  base_contract: any;
-  wallet: any;
-};
+type IStore = {};
 
-const Store: React.FC<IStore> = ({ base_contract, wallet }) => {
+const Store: React.FC<IStore> = ({}) => {
   const { store } = useSelector((state: any) => state.contractSlice.user);
   const userProducts = useSelector(
     (state: any) => state.productSlice.userProducts
@@ -106,7 +103,7 @@ const Store: React.FC<IStore> = ({ base_contract, wallet }) => {
           </Tooltip>
         )}
         <Collapse in={isAddProductOpen}>
-          <AddProduct base_contract={base_contract} wallet={wallet} />
+          <AddProduct />
         </Collapse>
       </Grid>
       <Grid container>
@@ -124,7 +121,7 @@ const Store: React.FC<IStore> = ({ base_contract, wallet }) => {
               />
             );
           })}
-        </Grid >
+        </Grid>
       </Grid>
     </Container>
   );

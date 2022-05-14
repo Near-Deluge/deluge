@@ -12,7 +12,7 @@ import "./index.css";
 
 import getConfig from "./config";
 import * as nearAPI from "near-api-js";
-import { ConnectConfig, WalletConnection } from "near-api-js";
+import { ConnectConfig, WalletConnection, Contract } from "near-api-js";
 import { ContractMethods } from "near-api-js/lib/contract";
 import { RATING_CONTRACT_NAME, STABLECOIN_CONTRACT_NAME } from "./config";
 import { Web3Storage } from "web3.storage";
@@ -152,6 +152,13 @@ const initializeContract = async () => {
 const web3Instance = initWeb3Storage();
 export const WebContext = React.createContext(web3Instance);
 
+// Creating Contexts for Contracts as in redux, these contracts are not string serializable
+export const BaseContractContext = React.createContext<Contract | null>(null);
+export const RatingContractContext = React.createContext<Contract | null>(null);
+export const DLGTContractContext = React.createContext<Contract | null>(null);
+export const WalletConnectionContext =
+  React.createContext<WalletConnection | null>(null);
+
 initializeContract().then(
   ({
     base_contract,
@@ -167,16 +174,24 @@ initializeContract().then(
           <ThemeProvider theme={theme}>
             {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
             <CssBaseline />
-            <WebContext.Provider value={web3Instance}>
-              <App
-                rating_contract={rating_contract}
-                dlgt_contract={dlgt_contract}
-                base_contract={base_contract}
-                currentUser={currentUser}
-                nearConfig={nearConfig}
-                wallet={walletConnection}
-              />
-            </WebContext.Provider>
+            <WalletConnectionContext.Provider value={walletConnection}>
+              <BaseContractContext.Provider value={base_contract}>
+                <RatingContractContext.Provider value={rating_contract}>
+                  <DLGTContractContext.Provider value={dlgt_contract}>
+                    <WebContext.Provider value={web3Instance}>
+                      <App
+                        rating_contract={rating_contract}
+                        dlgt_contract={dlgt_contract}
+                        base_contract={base_contract}
+                        currentUser={currentUser}
+                        nearConfig={nearConfig}
+                        wallet={walletConnection}
+                      />
+                    </WebContext.Provider>
+                  </DLGTContractContext.Provider>
+                </RatingContractContext.Provider>
+              </BaseContractContext.Provider>
+            </WalletConnectionContext.Provider>
           </ThemeProvider>
         </BrowserRouter>
       </Provider>,

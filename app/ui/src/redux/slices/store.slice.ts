@@ -20,12 +20,15 @@ type ValidStoreField =
 
 const initialState = {} as StoreState;
 
-const storeSlice = createSlice({
+export const storeSlice = createSlice({
   name: "store",
   initialState,
   reducers: {
     setStore(state, action: PayloadAction<Store>) {
       state.currentStore = action.payload;
+    },
+    setAllStores(state,action: PayloadAction<Array<Store>>) {
+      state.allStore = [...action.payload]
     },
     setField(
       state,
@@ -62,6 +65,8 @@ const storeSlice = createSlice({
   },
 });
 
-export const { setStore, setField, setLat, setLon } = storeSlice.actions;
+export const { setStore, setField, setLat, setLon, setAllStores } = storeSlice.actions;
+
+
 
 export default storeSlice.reducer;

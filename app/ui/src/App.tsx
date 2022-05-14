@@ -14,19 +14,29 @@ import Footer from "./components/footer";
 
 import Home from "./pages/home";
 import { setState, setUser, setStore } from "./redux/slices/contract.slice";
-import { setStore as setStoreStore } from "./redux/slices/store.slice";
+import {
+  setAllStores,
+  setStore as setStoreStore,
+} from "./redux/slices/store.slice";
 import { Contract, WalletConnection } from "near-api-js";
 import { initializeStableCoin, WebContext } from ".";
 import Store from "./pages/store";
 import AddStore from "./pages/addStore";
 import UpdateStore from "./components/stores/updateStore";
 import {
+  addOneAllProducts,
   addOneCidUserDetails,
+  setAllProducts,
   setUserProducts,
+  addOneCidAllUserDetails
 } from "./redux/slices/products.slice";
-import { Product } from "./utils/interface";
+import { Product, Store as IStore } from "./utils/interface";
 import { useContext } from "react";
 import ProductView from "./pages/product";
+import UpdateProduct from "./pages/updateProduct";
+import Account from "./pages/account";
+import Cart from "./pages/cart";
+import { store } from "./redux/store";
 
 // TODO: Fix this to concrete types from any
 type IApp = {
@@ -85,6 +95,20 @@ export default function App({
     });
   };
 
+  const fetch_and_set_all_cids = async (products: Array<Product>) => {
+    const instance = await web3Instance;
+    // This will async fetch all cids of user products
+    products.forEach(async (item) => {
+      const res = await instance.get(item.cid);
+      const files = await res?.files();
+      if (files) {
+        let textData = await files[0].text();
+        let parseObject = JSON.parse(textData);
+        dispatcher(addOneCidAllUserDetails(parseObject));
+      }
+    });
+  };
+
   const checkStore = async () => {
     const arg = {
       account_id: currentUser.accountId,
@@ -108,6 +132,54 @@ export default function App({
     dispatcher(setStore(res));
     dispatcher(setStoreStore(res));
   };
+
+  // Get All Stores from Base Contract
+  // Get All Products from the Base Contract
+  // Set All Stores and Products
+
+  // TODO: Optimize This
+  const get_all_stores = async () => {
+    const allStores = await base_contract.list_stores();
+    get_all_products(allStores);
+    dispatcher(setAllStores(allStores));
+  };
+
+  const get_all_products = async (stores: Array<IStore>) => {
+    let allProducts: Array<any> = [];
+
+    for (let i = 0; i < stores.length; ++i) {
+      const products = await base_contract.list_store_products({
+        store_id: stores[i].id,
+      });
+      allProducts = [...allProducts, ...products];
+    }
+
+    dispatcher(setAllProducts(allProducts));
+
+    fetch_and_set_all_cids(allProducts);
+
+    // Unsafe code ahead
+    // let obj: any = {};
+    // stores.forEach((item: IStore) => {
+    //   let prods = item.products;
+    //   if(prods.length > 0) {
+    //     prods.forEach((prodItem) => {
+    //       let res = allProducts.filter((vals) => vals.pid === prodItem);
+    //       if(res.length > 1) {
+    //         obj[prodItem.toString()] = item.id; 
+    //       }
+    //     })
+    //   }
+    //   console.log(obj)
+    // });
+    // console.log(obj);
+
+  };
+
+
+  React.useEffect(() => {
+    get_all_stores();
+  }, []);
 
   React.useEffect(() => {
     dispatcher(setUser(currentUser));
@@ -135,11 +207,11 @@ export default function App({
               <UpdateStore base_contract={base_contract} wallet={wallet} />
             }
           />
-          <Route
-            path="/store"
-            element={<Store base_contract={base_contract} wallet={wallet} />}
-          />
+          <Route path="/store" element={<Store />} />
           <Route path="/products/:cid" element={<ProductView />} />
+          <Route path="/products/:cid/update" element={<UpdateProduct />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/cart" element={<Cart />} />
         </Routes>
       </Container>
       <Footer />

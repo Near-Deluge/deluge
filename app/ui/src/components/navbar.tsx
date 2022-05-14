@@ -80,8 +80,6 @@ const Navbar: React.FC<INavbar> = ({
   const viewBal = balance / 10 ** 8;
 
   const handleBuy = () => {
-    console.log(ONE_NEAR);
-    console.log(new BN(ONE_NEAR).toFixed(0));
     base_contract.buy_ft({
       args: {},
       amount: new BN(ONE_NEAR).toFixed(0).toString(),

@@ -5,16 +5,20 @@ import { Product, Product_Storage } from "../../utils/interface";
 export interface ProductsState {
   userProducts: Array<Product>;
   allProducts: Array<Product>;
+  product_to_store: any;
   user_cid_details: Array<Product_Storage>;
+  all_cid_details: Array<Product_Storage>;
 }
 
 const initialState = {
   userProducts: [],
   allProducts: [],
+  product_to_store: {},
   user_cid_details: [],
+  all_cid_details: []
 } as ProductsState;
 
-const productSlice = createSlice({
+export const productSlice = createSlice({
   name: "product",
   initialState,
   reducers: {
@@ -37,6 +41,14 @@ const productSlice = createSlice({
       }
       // In Else case object will be already in the state
     },
+    addOneCidAllUserDetails(state, action: PayloadAction<Product_Storage>) {
+      // Do a checked Add
+      let res = state.all_cid_details.filter((item) => item.product_id === action.payload.product_id);
+      if(res.length === 0){
+        state.all_cid_details = [action.payload, ...state.all_cid_details];
+      }
+      // In Else case object will be already in the state
+    },
     removeOneCidUserDetails(state, action: PayloadAction<string>) {
       state.user_cid_details = state.user_cid_details.filter(
         (item) => item.product_id !== action.payload
@@ -56,6 +68,9 @@ const productSlice = createSlice({
         (item) => item.pid !== action.payload
       );
     },
+    setProductToStore(state, action: PayloadAction<any>) {
+      state.product_to_store = action.payload
+    }
   },
 });
 
@@ -69,6 +84,7 @@ export const {
   removeOneUserProduct,
   addOneCidUserDetails,
   removeOneCidUserDetails,
+  addOneCidAllUserDetails
 } = productSlice.actions;
 
 export default productSlice.reducer;

@@ -1,14 +1,20 @@
-import React, { useRef } from "react";
-import { useSelector } from "react-redux";
-
-import { Product_Storage, Product } from "../../utils/interface";
-
+import React, { useContext, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
+import { CIDString } from "web3.storage/dist/src/lib/interface";
+import { BaseContractContext, WalletConnectionContext, WebContext } from "..";
 import {
-  BaseContractContext,
-  WalletConnectionContext,
-  WebContext,
-} from "../../index";
-import { useContext } from "react";
+  initProductStorage,
+  length_unit,
+  size,
+  weight_unit,
+} from "../components/products/addProduct";
+import { addOneCidUserDetails } from "../redux/slices/products.slice";
+import { Product_Storage, Product as IProduct } from "../utils/interface";
+import { initProductBC } from "./product";
+
+import BN from "big.js";
+
 import {
   Typography,
   Container,
@@ -19,197 +25,187 @@ import {
   Chip,
   InputAdornment,
   MenuItem,
+  CircularProgress,
+  IconButton
 } from "@mui/material";
 import { Box } from "@mui/system";
-import BN from "big.js";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import { ArrowLeft, ArrowLeftOutlined } from "@mui/icons-material";
 
-export const length_unit = [
-  { value: "metere", symbol: "M" },
-  { value: "feet", symbol: "ft" },
-  { value: "inch", symbol: "in" },
-];
-
-export const get_symbol_from_unit = (val: String) => {
-  let res = length_unit.filter((v) => v.value === val);
-  if (res.length > 0) {
-    return res[0].symbol;
-  } else {
-    return "";
-  }
-};
-
-export const weight_unit = [
-  { value: "grams", symbol: "gm" },
-  { value: "kilograms", symbol: "kg" },
-  { value: "ounce", symbol: "ounce" },
-  { value: "pound", symbol: "pound" },
-];
-export const size = [
-  { value: "large", symbol: "L" },
-  { value: "extra large", symbol: "XL" },
-  { value: "small", symbol: "S" },
-  { value: "medium", symbol: "M" },
-  { value: "not_applicable", symbol: "N/A" },
-];
-
-export const initProductStorage: Product_Storage = {
-  name: "",
-  product_id: "",
-  description: "",
-  brand: "",
-  category: [],
-  usecase: "",
-  physical_details: {
-    dimensions: {
-      h: 0,
-      w: 0,
-      l: 0,
-      unit: "",
-    },
-    size: "",
-    weight: {
-      value: 0.0,
-      unit: "",
-    },
-  },
-  images: [],
-  videos: [],
-  expected_delivery: "",
-  available_in: [],
-};
-
-const AddProduct = () => {
-  // Add Product Flow
-  // Add all details and push to the ipfs and get the cid.
-  // One Cid is pulled, push the transaction to the base contract on blockchain
-
-  // Since Add Product is required is context of adding a new Product will keep the state local to this component
+const UpdateProduct = () => {
+  const { cid } = useParams();
+  const navigation = useNavigate();
+  const dispatcher = useDispatch();
 
   const web3Instance = useContext(WebContext);
+
   const base_contract = useContext(BaseContractContext);
-  const wallet = useContext(WalletConnectionContext);
+  const walletConnection = useContext(WalletConnectionContext);
 
-  //   console.log(web3Instance.then((res) => console.log(res)));
+  const userProducts = useSelector(
+    (state: any) => state.productSlice.userProducts
+  );
+  const userCidDetails = useSelector(
+    (state: any) => state.productSlice.user_cid_details
+  );
 
-  // I/P refereces
-  const categoryIPRef = useRef<HTMLInputElement>(null);
-  const imagesIPRef = useRef<HTMLInputElement>(null);
-  const videosIPRef = useRef<HTMLInputElement>(null);
-  const countriesIPRef = useRef<HTMLInputElement>(null);
+  // Progress Loading
+  const [loading, setLoading] = React.useState(false);
 
-  const [storage_product, setStorageProduct] = React.useState<Product_Storage>({
+  const [currentProduct, setCurrentProduct] = React.useState<Product_Storage>({
     ...initProductStorage,
   });
 
-  const [blockhain_product_storage, setBCProductStorage] =
-    React.useState<Product>({
-      cid: "",
-      inventory: 0,
-      pid: "",
-      name: "",
-      price: "",
-    });
+  const [currentProductBC, setCurrentProductBC] = React.useState<IProduct>({
+    ...initProductBC,
+  });
+
+  // This fetches a cid from ipfs and dispatch action to the global state in redux
+  const fetch_product = async (cid: CIDString) => {
+    const inst = await web3Instance;
+    const res = await inst.get(cid);
+    const files = await res?.files();
+    if (files) {
+      let textData = await files[0].text();
+      let parseObject = JSON.parse(textData);
+      dispatcher(addOneCidUserDetails(parseObject));
+    }
+  };
+
+  React.useEffect(() => {
+    let product = userProducts.filter((item: IProduct) => item.cid === cid)[0];
+    if (product) {
+      setCurrentProductBC({
+        ...product,
+        price: parseFloat((product.price / 10 ** 8).toString()),
+      });
+      let productCidDetails = userCidDetails.filter(
+        (item: Product_Storage) => item.product_id === product.pid
+      );
+
+      if (productCidDetails.length > 0) {
+        setCurrentProduct(productCidDetails[0]);
+      } else {
+        fetch_product(cid as CIDString);
+      }
+    } else {
+      // If Product is not found in user, redirect to store page
+      navigation("/store", { replace: true });
+    }
+  }, [userCidDetails]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStorageProduct({
-      ...storage_product,
+    setCurrentProduct({
+      ...currentProduct,
       [e.target.name]: e.target.value,
     });
   };
-  
+
   const handleBCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBCProductStorage({
-      ...blockhain_product_storage,
+    setCurrentProductBC({
+      ...currentProductBC,
       [e.target.name]: e.target.value,
     });
   };
 
   const handleCategoryDelete = (item: String) => {
-    const newList = storage_product.category.filter((val) => val !== item);
-    setStorageProduct({
-      ...storage_product,
+    const newList = currentProduct.category.filter((val) => val !== item);
+    setCurrentProduct({
+      ...currentProduct,
       category: [...newList],
     });
   };
 
   const handleCategoryAdd = (item: String) => {
     if (item.length > 3) {
-      setStorageProduct({
-        ...storage_product,
-        category: [item, ...storage_product.category],
+      setCurrentProduct({
+        ...currentProduct,
+        category: [item, ...currentProduct.category],
       });
     }
   };
 
   const handleImageDelete = (item: String) => {
-    const newList = storage_product.images.filter((val) => val !== item);
-    setStorageProduct({
-      ...storage_product,
+    const newList = currentProduct.images.filter((val) => val !== item);
+    setCurrentProduct({
+      ...currentProduct,
       images: [...newList],
     });
   };
 
   const handleImageAdd = (item: String) => {
     if (item.length > 3) {
-      setStorageProduct({
-        ...storage_product,
-        images: [item, ...storage_product.images],
+      setCurrentProduct({
+        ...currentProduct,
+        images: [item, ...currentProduct.images],
       });
     }
   };
 
   const handleVideoDelete = (item: String) => {
-    const newList = storage_product.videos.filter((val) => val !== item);
-    setStorageProduct({
-      ...storage_product,
+    const newList = currentProduct.videos.filter((val) => val !== item);
+    setCurrentProduct({
+      ...currentProduct,
       videos: [...newList],
     });
   };
 
   const handleVideoAdd = (item: String) => {
     if (item.length > 3) {
-      setStorageProduct({
-        ...storage_product,
-        videos: [item, ...storage_product.videos],
+      setCurrentProduct({
+        ...currentProduct,
+        videos: [item, ...currentProduct.videos],
       });
     }
   };
 
   const handleCountryDelete = (item: String) => {
-    const newList = storage_product.available_in.filter((val) => val !== item);
-    setStorageProduct({
-      ...storage_product,
+    const newList = currentProduct.available_in.filter((val) => val !== item);
+    setCurrentProduct({
+      ...currentProduct,
       available_in: [...newList],
     });
   };
 
   const handleCountryAdd = (item: String) => {
     if (item.length > 1) {
-      setStorageProduct({
-        ...storage_product,
-        available_in: [item, ...storage_product.available_in],
+      setCurrentProduct({
+        ...currentProduct,
+        available_in: [item, ...currentProduct.available_in],
       });
     }
   };
 
-  const handleSubmit = async () => {
-    // Send to IPFS to get CID
-    console.log(storage_product);
+  const handleDimensionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentProduct({
+      ...currentProduct,
+      physical_details: {
+        ...currentProduct.physical_details,
+        dimensions: {
+          ...currentProduct.physical_details.dimensions,
+          [e.target.name]: parseFloat(e.target.value),
+        },
+      },
+    });
+  };
+
+  const handleUpdate = async () => {
+    setLoading(true);
     try {
-      let file = new File([JSON.stringify(storage_product)], "deluge.txt");
+      let file = new File([JSON.stringify(currentProduct)], "deluge.txt");
       let instance = await web3Instance;
       let cid = await instance.put([file]);
-      console.log(cid);
+
+      console.log("File Uploaded to IPFS with ID: ", cid);
 
       const finalBCProd = {
-        ...blockhain_product_storage,
-        name: storage_product.name,
-        pid: storage_product.product_id,
-        cid,
-        inventory: blockhain_product_storage.inventory.toString(),
+        ...currentProductBC,
+        name: currentProduct.name,
+        pid: currentProduct.product_id,
+        cid: cid,
+        inventory: currentProductBC.inventory.toString(),
         // Since Precision of DLGT is 8 Decimals, Multiply it to the same.
-        price: new BN(blockhain_product_storage.price.toString())
+        price: new BN(currentProductBC.price.toString())
           .mul(10 ** 8)
           .toFixed()
           .toString(),
@@ -217,45 +213,48 @@ const AddProduct = () => {
 
       console.log(finalBCProd);
       //@ts-ignore
-      base_contract.create_product({
+      const res = await base_contract.update_product({
         args: {
-          product: {
-            ...finalBCProd,
-          },
-          store_id: wallet?.getAccountId(),
+          ...finalBCProd,
+          pid: finalBCProd.pid,
+          store_id: walletConnection?.getAccountId(),
         },
-        amount: "1",
-        meta: "create_product",
+        amount: "0",
+        meta: "update_product",
       });
+      console.log(res);
+      navigation(`/products/${cid}/update`, { replace: true });
+      setLoading(false);
     } catch (e) {
       console.log(e);
       alert(e);
+      setLoading(false);
       return;
     }
   };
 
-  const handleDimensionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStorageProduct({
-      ...storage_product,
-      physical_details: {
-        ...storage_product.physical_details,
-        dimensions: {
-          ...storage_product.physical_details.dimensions,
-          [e.target.name]: parseFloat(e.target.value),
-        },
-      },
-    });
-  };
+  // I/P refereces
+  const categoryIPRef = useRef<HTMLInputElement>(null);
+  const imagesIPRef = useRef<HTMLInputElement>(null);
+  const videosIPRef = useRef<HTMLInputElement>(null);
+  const countriesIPRef = useRef<HTMLInputElement>(null);
 
   return (
     <Paper elevation={2} sx={{ margin: "10px 0px", padding: "10px" }}>
+      <IconButton
+        onClick={() => {
+          navigation(-1);
+        }}
+      >
+        <ArrowLeft />
+      </IconButton>
       <Typography variant="h4" textAlign={"center"} gutterBottom>
         <InventoryIcon fontSize="large" />
-        Add Product
+        Update your product
       </Typography>
       <TextField
         name="name"
-        value={storage_product.name}
+        value={currentProduct.name}
         onChange={handleChange}
         label="Name"
         required
@@ -264,9 +263,9 @@ const AddProduct = () => {
       <Divider sx={{ margin: "20px 0px" }} />
       <TextField
         name="product_id"
-        value={storage_product.product_id}
+        value={currentProduct.product_id}
         onChange={handleChange}
-        required
+        disabled
         label="Product ID"
         fullWidth
         sx={{
@@ -275,7 +274,7 @@ const AddProduct = () => {
       />
       <TextField
         name="description"
-        value={storage_product.description}
+        value={currentProduct.description}
         onChange={handleChange}
         required
         label="Description"
@@ -286,7 +285,7 @@ const AddProduct = () => {
       />
       <TextField
         name="brand"
-        value={storage_product.brand}
+        value={currentProduct.brand}
         onChange={handleChange}
         required
         label="Brand"
@@ -297,7 +296,7 @@ const AddProduct = () => {
       />
       <Divider sx={{ margin: "20px 0px" }} />
       <Box>
-        {storage_product.category.map((item, index) => {
+        {currentProduct.category.map((item, index) => {
           return (
             <Chip
               key={item + index.toString()}
@@ -350,14 +349,14 @@ const AddProduct = () => {
           id="unit"
           select
           fullWidth
-          value={storage_product.physical_details.dimensions.unit}
+          value={currentProduct.physical_details.dimensions.unit}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setStorageProduct({
-              ...storage_product,
+            setCurrentProduct({
+              ...currentProduct,
               physical_details: {
-                ...storage_product.physical_details,
+                ...currentProduct.physical_details,
                 dimensions: {
-                  ...storage_product.physical_details.dimensions,
+                  ...currentProduct.physical_details.dimensions,
                   unit: e.target.value,
                 },
               },
@@ -377,7 +376,7 @@ const AddProduct = () => {
             label="Length of Product"
             id="length"
             name="l"
-            value={storage_product.physical_details.dimensions.l}
+            value={currentProduct.physical_details.dimensions.l}
             onChange={handleDimensionChange}
             type="number"
             sx={{ m: 1, width: "25ch" }}
@@ -391,7 +390,7 @@ const AddProduct = () => {
             label="Width of Product"
             id="width"
             name="w"
-            value={storage_product.physical_details.dimensions.w}
+            value={currentProduct.physical_details.dimensions.w}
             onChange={handleDimensionChange}
             type="number"
             sx={{ m: 1, width: "25ch" }}
@@ -405,7 +404,7 @@ const AddProduct = () => {
             label="Height of Product"
             id="height"
             name="h"
-            value={storage_product.physical_details.dimensions.h}
+            value={currentProduct.physical_details.dimensions.h}
             onChange={handleDimensionChange}
             type="number"
             sx={{ m: 1, width: "25ch" }}
@@ -422,12 +421,12 @@ const AddProduct = () => {
           id="size"
           select
           fullWidth
-          value={storage_product.physical_details.size}
+          value={currentProduct.physical_details.size}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setStorageProduct({
-              ...storage_product,
+            setCurrentProduct({
+              ...currentProduct,
               physical_details: {
-                ...storage_product.physical_details,
+                ...currentProduct.physical_details,
                 size: e.target.value,
               },
             });
@@ -447,14 +446,14 @@ const AddProduct = () => {
           id="weight"
           select
           fullWidth
-          value={storage_product.physical_details.weight.unit}
+          value={currentProduct.physical_details.weight.unit}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setStorageProduct({
-              ...storage_product,
+            setCurrentProduct({
+              ...currentProduct,
               physical_details: {
-                ...storage_product.physical_details,
+                ...currentProduct.physical_details,
                 weight: {
-                  ...storage_product.physical_details.weight,
+                  ...currentProduct.physical_details.weight,
                   unit: e.target.value,
                 },
               },
@@ -472,14 +471,14 @@ const AddProduct = () => {
         <TextField
           label="Weight of Product"
           id="weight"
-          value={storage_product.physical_details.weight.value}
+          value={currentProduct.physical_details.weight.value}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setStorageProduct({
-              ...storage_product,
+            setCurrentProduct({
+              ...currentProduct,
               physical_details: {
-                ...storage_product.physical_details,
+                ...currentProduct.physical_details,
                 weight: {
-                  ...storage_product.physical_details.weight,
+                  ...currentProduct.physical_details.weight,
                   value: parseFloat(e.target.value),
                 },
               },
@@ -490,7 +489,7 @@ const AddProduct = () => {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                {storage_product.physical_details.weight.unit}
+                {currentProduct.physical_details.weight.unit}
               </InputAdornment>
             ),
           }}
@@ -499,7 +498,7 @@ const AddProduct = () => {
       <Divider sx={{ margin: "20px 0px" }} />
       <TextField
         name="usecase"
-        value={storage_product.usecase}
+        value={currentProduct.usecase}
         onChange={handleChange}
         multiline
         rows={3}
@@ -513,7 +512,7 @@ const AddProduct = () => {
       />
       <Divider sx={{ margin: "20px 0px" }} />
       <Box>
-        {storage_product.images.map((item, index) => {
+        {currentProduct.images.map((item, index) => {
           return (
             <Chip
               key={item + index.toString()}
@@ -556,7 +555,7 @@ const AddProduct = () => {
       </Box>
       <Divider sx={{ margin: "20px 0px" }} />
       <Box>
-        {storage_product.videos.map((item, index) => {
+        {currentProduct.videos.map((item, index) => {
           return (
             <Chip
               key={item + index.toString()}
@@ -601,7 +600,7 @@ const AddProduct = () => {
 
       <TextField
         name="expected_delivery"
-        value={storage_product.expected_delivery}
+        value={currentProduct.expected_delivery}
         onChange={handleChange}
         required
         label="Expected Delivery Time"
@@ -614,7 +613,7 @@ const AddProduct = () => {
       <Divider sx={{ margin: "20px 0px" }} />
 
       <Box>
-        {storage_product.available_in.map((item, index) => {
+        {currentProduct.available_in.map((item, index) => {
           return (
             <Chip
               key={item + index.toString()}
@@ -658,7 +657,7 @@ const AddProduct = () => {
       <Divider sx={{ margin: "20px 0px" }} />
       <TextField
         name="inventory"
-        value={blockhain_product_storage.inventory}
+        value={currentProductBC.inventory}
         onChange={handleBCChange}
         required
         label="Inventory you have in stock currently."
@@ -671,7 +670,7 @@ const AddProduct = () => {
       />
       <TextField
         name="price"
-        value={blockhain_product_storage.price}
+        value={currentProductBC.price}
         onChange={handleBCChange}
         required
         label="Price of one unit of Product. (In DLG Tokens)"
@@ -683,12 +682,11 @@ const AddProduct = () => {
         }}
       />
       <Divider sx={{ margin: "20px 0px" }} />
-      <Button variant="contained" onClick={handleSubmit}>
-        {" "}
-        Create Product
+      <Button variant="contained" onClick={handleUpdate} disabled={loading}>
+        {!loading ? "Update Product" : <CircularProgress />}
       </Button>
     </Paper>
   );
 };
 
-export default AddProduct;
+export default UpdateProduct;

@@ -15,7 +15,7 @@ const StoreProductCard: React.FC<Product> = ({
 }) => {
   return (
     <Link to={`/products/${cid}`}>
-      <Paper>
+      <Paper sx={{ margin: "10px" }}>
         <Grid container padding={"10px"}>
           <Grid item xs={12} sm={3}>
             <Jdenticon size="60" value={cid} />
