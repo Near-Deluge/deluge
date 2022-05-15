@@ -19,7 +19,11 @@ import {
   initProductStorage,
   get_symbol_from_unit,
 } from "../components/products/addProduct";
-import { Product as IProduct, Product_Storage } from "../utils/interface";
+import {
+  Product as IProduct,
+  Product_Storage,
+  Store,
+} from "../utils/interface";
 import { WalletConnectionContext, WebContext } from "../index";
 import { addOneCidUserDetails } from "../redux/slices/products.slice";
 import { ArrowLeft, Close, ShoppingBag } from "@mui/icons-material";
@@ -75,8 +79,13 @@ const Product = () => {
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
 
   const handleAddCartProduct = (item: IProduct) => {
-    console.log(allStore);
-    // dispatcher(addItem(item));
+  
+    allStore.map((store: Store) => {
+      let res = store.products.filter((ipid) => ipid === item.pid);
+      if (res.length > 0) {
+        dispatcher(addItem({ product: item, store: store, qty: 1 }));
+      }
+    });
   };
 
   const handleRemoveItem = (pid: string) => {
@@ -84,11 +93,10 @@ const Product = () => {
   };
 
   React.useEffect(() => {
-    
     let res = cartItems.filter(
       (item: IProduct) => item.pid === currentProductBC.pid
     );
-    
+
     if (res.length > 0) {
       setIsItemInCart(true);
     } else {

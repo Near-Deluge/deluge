@@ -91,6 +91,6 @@ export interface Order {
   customer_secret: string;
   payload: {
     amount: string;
-    line_count: Array<LineItem>;
+    line_items: Array<LineItem>;
   };
 }

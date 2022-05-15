@@ -30,7 +30,7 @@ export const initializeStableCoin = async (
 ) => {
   const methodOptions = {
     viewMethods: ["ft_balance_of"],
-    changeMethods: ["ft_transfer"],
+    changeMethods: ["ft_transfer", "ft_transfer_call"],
     sender: walletConnection.getAccountId(),
   };
 

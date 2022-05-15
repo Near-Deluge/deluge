@@ -3,6 +3,7 @@ import { LineItem, Order, Product, Status, Store } from "../../utils/interface";
 
 import { v4 as uuid } from "uuid";
 import { store } from "../store";
+import { change_stable_to_human } from "../../utils/utils";
 
 export interface CartState {
   items: Array<Product>;
@@ -18,8 +19,8 @@ const blank_order: Order = {
   cid: "",
   customer_secret: "",
   payload: {
-    amount: "",
-    line_count: [],
+    amount: "0",
+    line_items: [],
   },
 };
 
@@ -48,16 +49,16 @@ const cartSlice = createSlice({
         state.items = [action.payload.product, ...state.items];
         // Find the seller for this product and prefill Order Details in here.
         // Order should be in format for each seller one order.
-        
+
         let res = state.orders.filter(
           (order) => order.seller_id === action.payload.store.id
         );
         if (res.length > 0) {
           // Order for this seller already exist so update that one
           let update_order = res[0];
-          
+
           // Check is this order contains this product.
-          let res2 = update_order.payload.line_count.filter(
+          let res2 = update_order.payload.line_items.filter(
             (item: LineItem) => item.product_id === action.payload.product.pid
           );
 
@@ -68,15 +69,15 @@ const cartSlice = createSlice({
               ...newLineItem,
               count: action.payload.qty,
             };
-            let newLineCount = update_order.payload.line_count.filter(
+            let newLineCount = update_order.payload.line_items.filter(
               (item: LineItem) => item.product_id !== action.payload.product.pid
             );
             newLineCount = [...newLineCount, newLineItem];
-            update_order.payload.line_count = newLineCount;
+            update_order.payload.line_items = newLineCount;
           } else {
             // Product is not on the LineItem
-            update_order.payload.line_count = [
-              ...update_order.payload.line_count,
+            update_order.payload.line_items = [
+              ...update_order.payload.line_items,
               {
                 price: action.payload.product.price,
                 count: action.payload.qty,
@@ -84,7 +85,7 @@ const cartSlice = createSlice({
               },
             ];
           }
-          
+
           // Order Values have been update here
           let newOrders = state.orders.filter(
             (item: Order) => item.seller_id !== action.payload.store.id
@@ -101,8 +102,8 @@ const cartSlice = createSlice({
             seller_id: action.payload.store.id.toString(),
             payload: {
               ...blank_order.payload,
-              line_count: [
-                ...blank_order.payload.line_count,
+              line_items: [
+                ...blank_order.payload.line_items,
                 {
                   price: action.payload.product.price,
                   count: action.payload.qty,
@@ -115,8 +116,95 @@ const cartSlice = createSlice({
         }
 
         // Calculate Totals for Ordering
-        
+
+        let newOrders = state.orders.map((order: Order) => {
+          let total = order.payload.amount;
+          order.payload.line_items.forEach((lineitem: LineItem) => {
+            total = (
+              parseFloat(
+                (
+                  parseFloat(change_stable_to_human(total)) +
+                  parseFloat(change_stable_to_human(lineitem.price)) *
+                    parseInt(lineitem.count.toString())
+                ).toString()
+              ) *
+              10 ** 8
+            ).toString();
+          });
+          order.payload.amount = total;
+          return order;
+        });
+        state.orders = newOrders;
       }
+    },
+    setQuantityItem(
+      state,
+      action: PayloadAction<{
+        seller_id: string;
+        product_id: string;
+        qty: number;
+      }>
+    ) {
+      let oldOrder = state.orders.filter(
+        (order: Order) => order.seller_id === action.payload.seller_id
+      );
+      if (oldOrder.length > 0) {
+        let payloadItem = oldOrder[0].payload.line_items.filter(
+          (lineItem: LineItem) =>
+            lineItem.product_id === action.payload.product_id
+        );
+        if (payloadItem.length > 0) {
+          let modItem = payloadItem[0];
+          modItem.count = action.payload.qty;
+          let newPayload = oldOrder[0].payload.line_items.filter(
+            (lineItem: LineItem) =>
+              lineItem.product_id !== action.payload.product_id
+          );
+          newPayload = [...newPayload, modItem];
+
+          // New Order Item
+          let orderItem: Order = {
+            ...oldOrder[0],
+            payload: {
+              ...oldOrder[0].payload,
+              line_items: newPayload,
+            },
+          };
+
+          // Mutate the State
+          let newOrders = state.orders.filter(
+            (item: Order) => item.seller_id !== action.payload.seller_id
+          );
+          state.orders = [...newOrders, orderItem];
+        }
+      }
+
+      // Calculate Totals for Ordering
+
+      let newOrders = state.orders.map((order: Order) => {
+        let total = "0";
+        order.payload.line_items.forEach((lineitem: LineItem) => {
+          // console.log(
+          //   parseFloat(change_stable_to_human(total)),
+          //   parseFloat(change_stable_to_human(lineitem.price)) *
+          //   parseInt(lineitem.count.toString())
+          // );
+          total = (
+            parseFloat(
+              (
+                parseFloat(change_stable_to_human(total)) +
+                parseFloat(change_stable_to_human(lineitem.price)) *
+                  parseInt(lineitem.count.toString())
+              ).toString()
+            ) *
+            10 ** 8
+          ).toString();
+        });
+        
+        order.payload.amount = total;
+        return order;
+      });
+      state.orders = newOrders;
     },
     removeItem(state, action: PayloadAction<string>) {
       let newState = state.items.filter((item) => {
@@ -136,6 +224,7 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addItem, setState, removeItem } = cartSlice.actions;
+export const { addItem, setState, removeItem, setQuantityItem } =
+  cartSlice.actions;
 
 export default cartSlice.reducer;

@@ -65,14 +65,12 @@ const ProductCard: React.FC<IProductCard> = ({
   });
 
   const handleAddCartProduct = (item: Product) => {
-    console.log(allStore);
     allStore.map((store: Store) => {
       let res = store.products.filter((ipid) => ipid === item.pid);
       if (res.length > 0) {
         dispatcher(addItem({ product: item, store: store, qty: 1 }));
       }
     });
-    // dispatcher(addItem(item));
   };
 
   const handleRemoveItem = (pid: string) => {

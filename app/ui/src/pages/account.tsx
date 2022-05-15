@@ -1,6 +1,14 @@
 import { Balance } from "@mui/icons-material";
-import { Paper, Typography, Grid, Box, Button } from "@mui/material";
-import React, { useContext } from "react";
+import {
+  Paper,
+  Typography,
+  Grid,
+  Box,
+  Button,
+  Chip,
+  TextField,
+} from "@mui/material";
+import React, { useContext, useRef } from "react";
 import {
   BaseContractContext,
   DLGTContractContext,
@@ -9,11 +17,18 @@ import {
 import { ONE_NEAR } from "../config";
 
 import BN from "big.js";
+import { useSelector } from "react-redux";
+import { Order } from "../utils/interface";
+import { change_stable_to_human } from "../utils/utils";
+import { Status } from "../utils/interface";
+import { ATTACHED_GAS } from "./cart";
 
 const Account = () => {
   const base_contract = useContext(BaseContractContext);
   const dlgt_contract = useContext(DLGTContractContext);
   const walletConnection = useContext(WalletConnectionContext);
+
+  const userDetails = useSelector((state: any) => state.contractSlice.user);
 
   const [contract_details, setContractDetails] = React.useState<{
     stable_balance: any;
@@ -32,6 +47,25 @@ const Account = () => {
     details: "",
     state: "",
   });
+
+  const [customerOrder, setCustomerOrders] = React.useState<any>([]);
+  const [shopOrder, setShopOrders] = React.useState<any>([]);
+
+  React.useEffect(() => {
+    (async () => {
+      if (userDetails.store) {
+        // @ts-ignore
+        const storeOrder = await base_contract.list_store_orders({
+          account_id: walletConnection?.getAccountId(),
+          store_account_id: walletConnection?.getAccountId(),
+        });
+
+        setShopOrders([...storeOrder]);
+      }
+    })();
+  }, [userDetails]);
+
+  const seedRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     (async () => {
@@ -59,6 +93,27 @@ const Account = () => {
         ...arg,
       });
 
+      // list_customer_orders
+      // @ts-ignore
+      const activeOrders = await base_contract.list_customer_orders({
+        account_id: walletConnection?.getAccountId(),
+        customer_account_id: walletConnection?.getAccountId(),
+      });
+
+      setCustomerOrders([...activeOrders]);
+
+      // list this stores order (id already store exists)
+
+      if (userDetails.store) {
+        // @ts-ignore
+        const storeOrder = await base_contract.list_store_orders({
+          account_id: walletConnection?.getAccountId(),
+          store_account_id: walletConnection?.getAccountId(),
+        });
+
+        setShopOrders([...storeOrder]);
+      }
+
       setContractDetails({
         stable_balance: bal,
         storage_staking: stake,
@@ -72,6 +127,82 @@ const Account = () => {
       args: {},
       amount: new BN(ONE_NEAR).toFixed(0).toString(),
     });
+  };
+
+  const parseStatusToUi = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return <Chip color="info" label="PENDING" />;
+      case "INTRANSIT":
+        return <Chip color="secondary" label="INTRANSIT" />;
+      case "COMPLETED":
+        return <Chip color="success" label="COMPLETED" />;
+      case "SCHEDULED":
+        return <Chip color="primary" label="SCHEDULED" />;
+      case "CANCELLED":
+        return <Chip color="error" label="CANCELLED" />;
+    }
+  };
+
+  const cancelOrder = async (order: Order) => {
+    // @ts-ignore
+    const res = await base_contract?.cancel_order({
+      args: {
+        customer_account_id: order.customer_account_id,
+        order_id: order.id,
+      },
+      gas: ATTACHED_GAS,
+      amount: "1",
+      meta: "cancel_order",
+    });
+    console.log(res);
+  };
+
+  const scheduleOrder = async (order: Order) => {
+    // @ts-ignore
+    const response = await base_contract?.schedule_order({
+      args: {
+        customer_account_id: order.customer_account_id,
+        order_id: order.id,
+      },
+      gas: ATTACHED_GAS,
+      amount: "1",
+      meta: "schedule_order",
+    });
+    console.log(response);
+  };
+
+  const intransitOrder = async (order: Order) => {
+    //@ts-ignore
+    const response = await base_contract?.intransit_order({
+      args: {
+        customer_account_id: order.customer_account_id,
+        order_id: order.id,
+      },
+      gas: ATTACHED_GAS,
+      amount: "1",
+      meta: "intransit_order",
+    });
+    console.log(response);
+  };
+
+  const completeOrder = async (order: Order, seed: string) => {
+    try {
+      // @ts-ignore
+      const response = await base_contract?.complete_order({
+        args: {
+          orig_seed: seed,
+          customer_account_id: order.customer_account_id,
+          order_id: order.id,
+        },
+        gas: ATTACHED_GAS,
+        amount: "1",
+        meta: "complete_order",
+      });
+      console.log("response", { response });
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   return (
@@ -128,7 +259,141 @@ const Account = () => {
           </Button>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography>OnGoing Orders</Typography>
+          {customerOrder.length > 0 ? (
+            <Typography>OnGoing Orders</Typography>
+          ) : (
+            <Typography>
+              Looks like you don't have any active order at the moment.
+            </Typography>
+          )}
+          {customerOrder.map((order: any, index: number) => {
+            return (
+              <Paper sx={{ padding: "10px" }}>
+                <Typography>Order ID: {order.id}</Typography>
+                <Typography>
+                  Customer Secret: {order.customer_secret}
+                </Typography>
+                <Typography>
+                  Order Value: {change_stable_to_human(order.payload.amount)}{" "}
+                  DLGT
+                </Typography>
+                <Typography>Seller ID: {order.seller_id}</Typography>
+                <Typography>CID to Address Details: {order.cid}</Typography>
+                <Box marginBottom={"20px"}>
+                  <Typography>Status</Typography>
+                  {parseStatusToUi(order.status)}
+                </Box>
+                <Box>
+                  {order.status === "PENDING" && (
+                    <Button variant="contained" color="error">
+                      Cancel Order
+                    </Button>
+                  )}
+                  {order.status === "INTRANSIT" && (
+                    <React.Fragment>
+                      <TextField
+                        inputRef={seedRef}
+                        placeholder="Enter Secret to Complete Order"
+                      />
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => {
+                          if (seedRef.current !== null) {
+                            completeOrder(order, seedRef.current.value);
+                          }
+                        }}
+                      >
+                        Complete Order
+                      </Button>
+                    </React.Fragment>
+                  )}
+                </Box>
+              </Paper>
+            );
+          })}
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          {shopOrder.length > 0 && <Typography>Shop Orders</Typography>}
+          {shopOrder.map((order: any, index: number) => {
+            return (
+              <Paper sx={{ padding: "10px" }}>
+                <Typography>Order ID: {order.id}</Typography>
+                <Typography>
+                  Customer Secret: {order.customer_secret}
+                </Typography>
+                <Typography>
+                  Order Value: {change_stable_to_human(order.payload.amount)}{" "}
+                  DLGT
+                </Typography>
+                <Typography>Seller ID: {order.seller_id}</Typography>
+                <Typography>CID to Address Details: {order.cid}</Typography>
+                <Box marginBottom={"20px"}>
+                  <Typography>Status</Typography>
+                  {parseStatusToUi(order.status)}
+                </Box>
+                <Box>
+                  {order.status === "PENDING" && (
+                    <React.Fragment>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        sx={{ marginRight: "10px" }}
+                        onClick={() => cancelOrder(order)}
+                      >
+                        Cancel Order
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => scheduleOrder(order)}
+                      >
+                        Schedule Order
+                      </Button>
+                    </React.Fragment>
+                  )}
+                  {order.status === "SCHEDULED" && (
+                    <React.Fragment>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => intransitOrder(order)}
+                      >
+                        Order INTRASIT
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        sx={{ marginRight: "10px" }}
+                        onClick={() => cancelOrder(order)}
+                      >
+                        Cancel Order
+                      </Button>
+                    </React.Fragment>
+                  )}
+                  {order.status === "INTRANSIT" && (
+                    <React.Fragment>
+                      <TextField
+                        inputRef={seedRef}
+                        placeholder="Enter Secret to Complete Order"
+                      />
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => {
+                          if (seedRef.current !== null) {
+                            completeOrder(order, seedRef.current.value);
+                          }
+                        }}
+                      >
+                        Complete Order
+                      </Button>
+                    </React.Fragment>
+                  )}
+                </Box>
+              </Paper>
+            );
+          })}
         </Grid>
       </Grid>
     </Paper>
