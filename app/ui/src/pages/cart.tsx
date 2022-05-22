@@ -7,26 +7,241 @@ import {
   TextField,
   Link as MuiLink,
   MenuItem,
+  Modal,
+  Divider,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
-import React, { useContext } from "react";
+import React, { useContext, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   BaseContractContext,
   DLGTContractContext,
   WalletConnectionContext,
+  WebContext,
 } from "..";
-import { LineItem, Order, Product, Status, Store } from "../utils/interface";
+import {
+  LineItem,
+  Order,
+  Order_Specification,
+  Product,
+  Status,
+  Store,
+} from "../utils/interface";
 import { change_stable_to_human } from "../utils/utils";
 import CryptoJS from "crypto-js";
+import Randomstring from "randomstring";
 
 import { fromJSON, stringify } from "flatted";
+
+import * as nearAPI from "near-api-js";
 
 // @ts-ignore
 import Jdenticon from "react-jdenticon";
 import { Link } from "react-router-dom";
 import { setQuantityItem } from "../redux/slices/cart.slice";
+import { ShuffleOutlined } from "@mui/icons-material";
 
 export const ATTACHED_GAS = "300000000000000";
+
+export const AddressForm:React.FC<{
+  orderId?: string
+}> = ({
+  orderId
+}) => {
+  const userDetails = useSelector((state: any) => state.contractSlice.user);
+ 
+  const web3Instance = useContext(WebContext);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    setAddressState({
+      ...addressState,
+      userId: userDetails.accountId,
+    });
+  }, [userDetails]);
+
+  const [addressState, setAddressState] = React.useState<Order_Specification>({
+    address: "",
+    country: "",
+    district: "",
+    email: "",
+    state: "",
+    name: "",
+    pincode: "",
+    phone: "",
+    userId: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddressState({
+      ...addressState,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmitClick = async () => {
+    const ipfsClient = await web3Instance;
+    console.log(addressState);
+    let file = new File([JSON.stringify(addressState)], "addressDetails.txt");
+    const cid = await ipfsClient.put([file]);
+    console.log(cid);
+    if (inputRef !== null) {
+      console.log(inputRef.current?.value);
+    }
+    return;
+  };
+
+  React.useEffect(() => {
+    // (async () => {
+    //   console.log(
+    //     await walletConnection?._keyStore.getKey("testnet", "prix.testnet")
+    //   );
+    //   console.log(await nearAPI.utils.PublicKey.from("prix.testnet"));
+    // })();
+  });
+
+  return (
+    <Grid container>
+      <Grid item xs={1} />
+      <Grid
+        item
+        xs={10}
+        padding={"10px"}
+        display="flex"
+        alignItems="center"
+        justifyContent={"center"}
+      >
+        <Paper sx={{ padding: "20px" }}>
+          <Typography textAlign={"center"} variant="h4">
+            Enter Your Address Details
+          </Typography>
+          <Divider sx={{ margin: "20px 0px" }} />
+          <Box
+            sx={{
+              maxWidth: "600px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "column",
+            }}
+          >
+            <TextField
+              value={addressState.name}
+              name="name"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"Name"}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              value={addressState.email}
+              name="email"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"Email"}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              value={addressState.address}
+              name="address"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"Address"}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              value={addressState.district}
+              name="district"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"District/City"}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              value={addressState.state}
+              name="state"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"State"}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              value={addressState.country}
+              name="country"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"Country"}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              value={addressState.pincode}
+              name="pincode"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"Pincode"}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              value={addressState.phone}
+              name="phone"
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"Phone/Contact No."}
+              variant="outlined"
+              onChange={handleChange}
+            />
+            <TextField
+              fullWidth
+              required
+              sx={{ margin: "10px" }}
+              label={"Secret"}
+              helperText="Keep this secret until you get you delivery at your place."
+              variant="outlined"
+              inputRef={inputRef}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => {
+                        if (inputRef.current !== null) {
+                          console.log("I am Clicked.");
+                          inputRef.current.value = Randomstring.generate(16)
+                        }
+                      }}
+                    >
+                      <ShuffleOutlined />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Button variant="contained" onClick={handleSubmitClick}>
+              Send Order Details
+            </Button>
+          </Box>
+        </Paper>
+      </Grid>
+      <Grid item xs={1} />
+    </Grid>
+  );
+};
 
 export const CartItem: React.FC<{
   product: Product;
@@ -117,7 +332,6 @@ const Cart = () => {
   const base_contract = useContext(BaseContractContext);
   const walletConnection = useContext(WalletConnectionContext);
 
-  const cartItems = useSelector((state: any) => state.cartSlice.items);
   const cartOrders = useSelector((state: any) => state.cartSlice.orders);
   const cartTotal = useSelector((state: any) => state.cartSlice.total);
   const userDetails = useSelector((state: any) => state.contractSlice.user);
@@ -147,6 +361,9 @@ const Cart = () => {
     if (res.length > 0) {
       // DO IPFS Call here to store Delivery Stuff
 
+      handleOpen();
+      return;
+
       let dummyCid = "Queresjdfigusiyegibuifgwf";
       let secret = "0001";
 
@@ -172,8 +389,8 @@ const Cart = () => {
         msg: JSON.stringify({ ...finalObj }),
       };
 
-      if(finalObj.customer_account_id === finalObj.seller_id) {
-        alert("You can't buy from your own store.")
+      if (finalObj.customer_account_id === finalObj.seller_id) {
+        alert("You can't buy from your own store.");
         return;
       }
 
@@ -182,7 +399,7 @@ const Cart = () => {
       // @ts-ignore
       dlgt_contract?.ft_transfer_call({
         args: {
-          ...args
+          ...args,
         },
         gas: ATTACHED_GAS,
         amount: "1", // attached deposit in yoctoNEAR (optional)
@@ -190,8 +407,20 @@ const Cart = () => {
     }
   };
 
+  const [open, setOpen] = React.useState<boolean>(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
   return (
     <Paper sx={{ padding: "10px" }}>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="order-address-form"
+        aria-describedby="order-address-buyer-form"
+      >
+        <AddressForm />
+      </Modal>
       {parseFloat(cartTotal) <= 0 ? (
         <Typography>
           Looks like cart is Empty. Try adding something from{" "}

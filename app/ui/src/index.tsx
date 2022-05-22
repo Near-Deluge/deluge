@@ -139,6 +139,8 @@ const initializeContract = async () => {
   const rating_contract = await initializeRatingContract(walletConnection);
   const dlgt_contract = await initializeStableCoin(walletConnection);
 
+  
+
   return {
     base_contract,
     rating_contract,

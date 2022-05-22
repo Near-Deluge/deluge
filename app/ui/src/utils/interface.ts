@@ -58,12 +58,16 @@ export interface Product_Storage {
 
 // Storage Specification for Ordering Details
 export interface Order_Specification {
+  name: String;
   address: String;
   district: String;
+  state: String;
   country: String;
   pincode: String;
   phone?: String;
   email: String;
+  userId: String;
+  // orderId: String;
 }
 
 
