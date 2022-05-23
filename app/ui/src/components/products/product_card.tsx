@@ -14,7 +14,7 @@ import "./product_card.css";
 import { change_stable_to_human } from "../../utils/utils";
 import { Product, Store } from "../../utils/interface";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PaddedDividerSpacer } from "../../pages/product";
 import { useDispatch, useSelector } from "react-redux";
 import { addItem, removeItem } from "../../redux/slices/cart.slice";
@@ -49,6 +49,8 @@ const ProductCard: React.FC<IProductCard> = ({
 }) => {
   const [fav, setFav] = useState(true);
   const dispatcher = useDispatch();
+
+  const navigate = useNavigate();
 
   const [isItemInCart, setIsItemInCart] = React.useState(false);
   const cartItems = useSelector((state: any) => state.cartSlice.items);
@@ -98,7 +100,7 @@ const ProductCard: React.FC<IProductCard> = ({
       className={`main-container ${orientation || "vertical"}`}
       sx={{ minWidth: "300px" }}
     >
-      <div className="image-wrapper">
+      <div className="image-wrapper" onClick={() => navigate(`/products/${productBC.cid}`)}>
         <img src={img} alt={name} />
       </div>
       <div className="content-details">

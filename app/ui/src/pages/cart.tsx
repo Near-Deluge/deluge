@@ -40,68 +40,23 @@ import * as nearAPI from "near-api-js";
 import Jdenticon from "react-jdenticon";
 import { Link } from "react-router-dom";
 import { setQuantityItem } from "../redux/slices/cart.slice";
-import { ShuffleOutlined } from "@mui/icons-material";
+import { Close, ShuffleOutlined } from "@mui/icons-material";
 
 export const ATTACHED_GAS = "300000000000000";
 
-export const AddressForm:React.FC<{
-  orderId?: string
+export const AddressForm: React.FC<{
+  addressState: Order_Specification;
+  secretInputRef: any;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => any;
+  handleSubmitClick: () => any;
+  handleClose: () => any;
 }> = ({
-  orderId
+  addressState,
+  secretInputRef,
+  handleChange,
+  handleSubmitClick,
+  handleClose,
 }) => {
-  const userDetails = useSelector((state: any) => state.contractSlice.user);
- 
-  const web3Instance = useContext(WebContext);
-
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    setAddressState({
-      ...addressState,
-      userId: userDetails.accountId,
-    });
-  }, [userDetails]);
-
-  const [addressState, setAddressState] = React.useState<Order_Specification>({
-    address: "",
-    country: "",
-    district: "",
-    email: "",
-    state: "",
-    name: "",
-    pincode: "",
-    phone: "",
-    userId: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddressState({
-      ...addressState,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmitClick = async () => {
-    const ipfsClient = await web3Instance;
-    console.log(addressState);
-    let file = new File([JSON.stringify(addressState)], "addressDetails.txt");
-    const cid = await ipfsClient.put([file]);
-    console.log(cid);
-    if (inputRef !== null) {
-      console.log(inputRef.current?.value);
-    }
-    return;
-  };
-
-  React.useEffect(() => {
-    // (async () => {
-    //   console.log(
-    //     await walletConnection?._keyStore.getKey("testnet", "prix.testnet")
-    //   );
-    //   console.log(await nearAPI.utils.PublicKey.from("prix.testnet"));
-    // })();
-  });
-
   return (
     <Grid container>
       <Grid item xs={1} />
@@ -114,9 +69,14 @@ export const AddressForm:React.FC<{
         justifyContent={"center"}
       >
         <Paper sx={{ padding: "20px" }}>
-          <Typography textAlign={"center"} variant="h4">
-            Enter Your Address Details
-          </Typography>
+          <Box display={"flex"}>
+            <Typography textAlign={"center"} variant="h4">
+              Enter Your Address Details
+            </Typography>
+            <IconButton onClick={handleClose}>
+              <Close color="error" />
+            </IconButton>
+          </Box>
           <Divider sx={{ margin: "20px 0px" }} />
           <Box
             sx={{
@@ -214,15 +174,15 @@ export const AddressForm:React.FC<{
               label={"Secret"}
               helperText="Keep this secret until you get you delivery at your place."
               variant="outlined"
-              inputRef={inputRef}
+              inputRef={secretInputRef}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
                       onClick={() => {
-                        if (inputRef.current !== null) {
-                          console.log("I am Clicked.");
-                          inputRef.current.value = Randomstring.generate(16)
+                        if (secretInputRef.current !== null) {
+                          secretInputRef.current.value =
+                            Randomstring.generate(16);
                         }
                       }}
                     >
@@ -327,6 +287,7 @@ export const CartItem: React.FC<{
   );
 };
 
+// Cart Function Component
 const Cart = () => {
   const dlgt_contract = useContext(DLGTContractContext);
   const base_contract = useContext(BaseContractContext);
@@ -349,62 +310,107 @@ const Cart = () => {
     }
   };
 
+  // User Details Hooks Stuff
+
+  const web3Instance = useContext(WebContext);
+  const secretInputRef = useRef<HTMLInputElement>(null);
+
+  const [currentOrderId, setCurrentOrderId] = React.useState<string>("");
+
+  React.useEffect(() => {
+    setAddressState({
+      ...addressState,
+      userId: userDetails.accountId,
+    });
+  }, [userDetails]);
+
+  const [addressState, setAddressState] = React.useState<Order_Specification>({
+    address: "",
+    country: "",
+    district: "",
+    email: "",
+    state: "",
+    name: "",
+    pincode: "",
+    phone: "",
+    userId: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddressState({
+      ...addressState,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmitClick = async () => {
+    const ipfsClient = await web3Instance;
+    console.log(addressState);
+    let file = new File([JSON.stringify(addressState)], "addressDetails.txt");
+    const cid = await ipfsClient.put([file]);
+    console.log(cid);
+    if (secretInputRef !== null) {
+      console.log(secretInputRef.current?.value);
+
+      const secret = secretInputRef.current?.value;
+
+      if (secret && secret.length > 5) {
+        let res = cartOrders.filter(
+          (order: Order) => order.id === currentOrderId
+        );
+        if (res.length > 0) {
+          let hash = await CryptoJS.SHA256(secret).toString(CryptoJS.enc.Hex);
+
+          let finalObj: Order = {
+            ...res[0],
+            customer_account_id: userDetails.accountId,
+            customer_secret: hash,
+            cid: cid,
+            status: Status[Status.PENDING],
+          };
+
+          let strMsg = stringify(finalObj);
+          const base_contract_name = base_contract?.contractId;
+  
+          console.log(typeof strMsg);
+
+          const args = {
+            receiver_id: base_contract_name,
+            amount: finalObj.payload.amount.toString(),
+            memo: finalObj.id,
+            msg: JSON.stringify({ ...finalObj }),
+          };
+
+          if (finalObj.customer_account_id === finalObj.seller_id) {
+            alert("You can't buy from your own store.");
+            return;
+          }
+
+          // Send transaction to the Blockchain
+
+          // @ts-ignore
+          dlgt_contract?.ft_transfer_call({
+            args: {
+              ...args,
+            },
+            gas: ATTACHED_GAS,
+            amount: "1", // attached deposit in yoctoNEAR (optional)
+          });
+        }
+      }
+    }
+    return;
+  };
+
   const handleBuy = async (order_id: string) => {
     // Steps to buy
     // Search all the products for pids
     // Filter all the products for a seller
     // Store all the other items on browser storage
     // Once stored then place order for one seller in this transaction
-    console.log(cartOrders);
 
-    let res = cartOrders.filter((order: Order) => order.id === order_id);
-    if (res.length > 0) {
-      // DO IPFS Call here to store Delivery Stuff
-
-      handleOpen();
-      return;
-
-      let dummyCid = "Queresjdfigusiyegibuifgwf";
-      let secret = "0001";
-
-      let hash = await CryptoJS.SHA256(secret).toString(CryptoJS.enc.Hex);
-
-      let finalObj: Order = {
-        ...res[0],
-        customer_account_id: userDetails.accountId,
-        customer_secret: hash,
-        cid: dummyCid,
-        status: Status[Status.PENDING],
-      };
-
-      let strMsg = stringify(finalObj);
-      const base_contract_name = base_contract?.contractId;
-      console.log(base_contract_name);
-      console.log(typeof strMsg);
-
-      const args = {
-        receiver_id: base_contract_name,
-        amount: finalObj.payload.amount.toString(),
-        memo: finalObj.id,
-        msg: JSON.stringify({ ...finalObj }),
-      };
-
-      if (finalObj.customer_account_id === finalObj.seller_id) {
-        alert("You can't buy from your own store.");
-        return;
-      }
-
-      // Send transaction to the Blockchain
-
-      // @ts-ignore
-      dlgt_contract?.ft_transfer_call({
-        args: {
-          ...args,
-        },
-        gas: ATTACHED_GAS,
-        amount: "1", // attached deposit in yoctoNEAR (optional)
-      });
-    }
+    setCurrentOrderId(order_id);
+    handleOpen();
   };
 
   const [open, setOpen] = React.useState<boolean>(false);
@@ -419,7 +425,13 @@ const Cart = () => {
         aria-labelledby="order-address-form"
         aria-describedby="order-address-buyer-form"
       >
-        <AddressForm />
+        <AddressForm
+          addressState={addressState}
+          secretInputRef={secretInputRef}
+          handleChange={handleChange}
+          handleSubmitClick={handleSubmitClick}
+          handleClose={handleClose}
+        />
       </Modal>
       {parseFloat(cartTotal) <= 0 ? (
         <Typography>

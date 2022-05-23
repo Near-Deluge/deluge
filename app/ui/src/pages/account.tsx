@@ -145,6 +145,7 @@ const Account = () => {
   };
 
   const cancelOrder = async (order: Order) => {
+    console.log("Cancel Order Triggered.");
     // @ts-ignore
     const res = await base_contract?.cancel_order({
       args: {
@@ -285,7 +286,12 @@ const Account = () => {
                 </Box>
                 <Box>
                   {order.status === "PENDING" && (
-                    <Button variant="contained" color="error">
+                    <Button
+                      variant="contained"
+                      color="error"
+                      sx={{ marginRight: "10px" }}
+                      onClick={() => cancelOrder(order)}
+                    >
                       Cancel Order
                     </Button>
                   )}

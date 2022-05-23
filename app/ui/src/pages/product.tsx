@@ -25,7 +25,10 @@ import {
   Store,
 } from "../utils/interface";
 import { WalletConnectionContext, WebContext } from "../index";
-import { addOneCidUserDetails } from "../redux/slices/products.slice";
+import {
+  addOneCidAllUserDetails,
+  addOneCidUserDetails,
+} from "../redux/slices/products.slice";
 import { ArrowLeft, Close, ShoppingBag } from "@mui/icons-material";
 
 import { BaseContractContext } from "../index";
@@ -79,7 +82,6 @@ const Product = () => {
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
 
   const handleAddCartProduct = (item: IProduct) => {
-  
     allStore.map((store: Store) => {
       let res = store.products.filter((ipid) => ipid === item.pid);
       if (res.length > 0) {
@@ -92,6 +94,8 @@ const Product = () => {
     dispatcher(removeItem(pid));
   };
 
+  // Hook to check if product is in the cart
+  // Improve this to do it each order basis
   React.useEffect(() => {
     let res = cartItems.filter(
       (item: IProduct) => item.pid === currentProductBC.pid
@@ -109,6 +113,12 @@ const Product = () => {
   );
   const userCidDetails = useSelector(
     (state: any) => state.productSlice.user_cid_details
+  );
+  const allProducts = useSelector(
+    (state: any) => state.productSlice.allProducts
+  );
+  const allCidDetails = useSelector(
+    (state: any) => state.productSlice.all_cid_details
   );
 
   const [currentProduct, setCurrentProduct] = React.useState<Product_Storage>({
@@ -133,6 +143,17 @@ const Product = () => {
     }
   };
 
+  const fetch_product_non_owned = async (cid: CIDString) => {
+    const inst = await instance;
+    const res = await inst.get(cid);
+    const files = await res?.files();
+    if (files) {
+      let textData = await files[0].text();
+      let parseObject = JSON.parse(textData);
+      dispatcher(addOneCidAllUserDetails(parseObject));
+    }
+  };
+
   React.useEffect(() => {
     let product = userProducts.filter((item: IProduct) => item.cid === cid)[0];
     if (product) {
@@ -150,6 +171,24 @@ const Product = () => {
     } else {
       // If Product is not found, search it here
       setIsUserProd(false);
+      let product = allProducts.filter((item: IProduct) => item.cid === cid)[0];
+
+      console.log(product);
+      console.log(allProducts);
+      console.log(allCidDetails);
+
+      if (product) {
+        setCurrentProductBC({ ...product });
+        let productCidDetails = allCidDetails.filter(
+          (item: Product_Storage) => item.product_id === product.pid
+        );
+
+        if (productCidDetails.length > 0) {
+          setCurrentProduct(productCidDetails[0]);
+        } else {
+          fetch_product_non_owned(cid as CIDString);
+        }
+      }
     }
   }, [userCidDetails]);
 
