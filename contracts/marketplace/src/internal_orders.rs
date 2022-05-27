@@ -7,6 +7,8 @@ use near_sdk::env;
 use crate::*;
 
 const BASIC_GAS: Gas = 5_000_000_000_000;
+// 20 TGas for NFT Mint
+const MINT_GAS: Gas  = 20_000_000_000_000;
 
 const ONE_TENTH_NEAR: Balance = 100_000_000_000_000_000_000_000;
 
@@ -78,6 +80,7 @@ impl DelugeBase {
 
         order.status = OrderStatus::CANCELLED;
         self.orders.insert(&okey, &order);
+
     }
 
     #[payable]
@@ -254,7 +257,7 @@ impl DelugeBase {
                 b"nft_mint",
                 &arg_str.as_bytes(),
                 ONE_TENTH_NEAR,
-                BASIC_GAS,
+                MINT_GAS,
             );
 
             nft_promises.push(promise_index_n);
