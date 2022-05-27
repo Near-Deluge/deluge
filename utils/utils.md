@@ -1,5 +1,6 @@
 # Utils - how to use
 
+
 ## nft_tokens_of
 `npx ts-node nft_tokens_of.ts -c fabrics-delivery.marketplace.test.near -a clifford.test.near`
 
@@ -14,6 +15,9 @@ Amount value is in absolute. No conversions.
 `npx ts-node ft_transfer_call.ts -c usdt.test.near -a dev0.test.near -r marketplace.test.near -o orders/order-1.json -m order-1.json`
 
 # Interact with marketplace
+
+## Initialize the Marketplace Contract
+`npx ts-node marketplace_initialize.ts -a marketplace.test.near`
 
 # IMPORTANT: setup marketplace ft_contract_name
 `npx ts-node marketplace_set_ft_contract_name.ts -c marketplace.test.near -a marketplace.test.near --ftContractName usdt.test.near`
@@ -91,10 +95,9 @@ Amount value is in absolute. No conversions.
 `npx ts-node marketplace_storage_view.ts -c marketplace.test.near -a fabrics-delivery.test.near`
 
 # Delete contract account
-near delete marketplace.test.near test.near
+`near delete marketplace.test.near test.near`
 # Create marketplace.test.near
-near create-account marketplace.test.near --masterAccount test.near --initialBalance 10
-
+`near create-account marketplace.test.near --masterAccount test.near --initialBalance 10`
 
 # Rating Contract
 
