@@ -1,5 +1,6 @@
 import React, { useContext, useRef, useState } from "react";
 import { BaseContractContext, WalletConnectionContext, WebContext } from "..";
+import { useSnackbar } from "notistack";
 
 import {
   Grid,
@@ -18,7 +19,6 @@ import OrderView from "../components/orders/orderView";
 import { ATTACHED_GAS } from "./cart";
 
 export const parseStatusToString = (status: any) => {
-
   if (status === "PENDING") return "pending";
   if (status === "CANCELLED") return "cancelled";
   if (status === "COMPLETED") return "completed";
@@ -29,9 +29,9 @@ export const parseStatusToString = (status: any) => {
 };
 
 const CompleteOrder = () => {
-  const instance = useContext(WebContext);
   const base_contract = useContext(BaseContractContext);
-  const walletConnection = useContext(WalletConnectionContext);
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<Order | null>(null);
@@ -44,10 +44,11 @@ const CompleteOrder = () => {
     if (orderRef.current !== null && customerRef.current !== null) {
       const orderID = orderRef.current?.value;
       const accountId = customerRef.current?.value;
-      console.log(orderID);
-      console.log(accountId);
+
       if (orderID.length === 0 || accountId.length === 0) {
-        alert("Make Sure you have inserted Order ID and accountId");
+        enqueueSnackbar("Make Sure you have inserted Order ID and accountId", {
+          variant: "error",
+        });
         return;
       }
       setLoading(true);
@@ -68,11 +69,21 @@ const CompleteOrder = () => {
         setLoading(false);
       } catch (e) {
         console.log(e);
-        alert("Looks like order you are trying to fetch does not exists!!");
+        enqueueSnackbar(
+          "Looks like order you are trying to fetch does not exist on blockchain!!",
+          {
+            variant: "error",
+          }
+        );
         setLoading(false);
       }
     } else {
-      alert("Make Sure you have inserted Order ID and Customer AccountID.");
+      enqueueSnackbar(
+        "Make Sure you have inserted Order ID and Customer AccountID.",
+        {
+          variant: "error",
+        }
+      );
     }
   };
 
@@ -143,7 +154,7 @@ const CompleteOrder = () => {
           <Divider sx={{ margin: "20px 0px" }} />
           {orderDetails !== null && <OrderView orderDetails={orderDetails} />}
           <Divider sx={{ margin: "10px 0px" }} />
-        
+
           {orderDetails !== null &&
             parseStatusToString(orderDetails.status) !== "intransit" && (
               <Typography color="error" variant="caption" gutterBottom>
@@ -163,7 +174,11 @@ const CompleteOrder = () => {
                   sx={{ marginBottom: "20px" }}
                   inputRef={secretRef}
                 />
-                <Button variant="contained" color="success" onClick={completeOrder}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={completeOrder}
+                >
                   Complete the Order
                 </Button>
               </Box>

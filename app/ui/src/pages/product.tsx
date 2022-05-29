@@ -33,6 +33,7 @@ import { ArrowLeft, Close, ShoppingBag } from "@mui/icons-material";
 
 import { BaseContractContext } from "../index";
 import { addItem, removeItem } from "../redux/slices/cart.slice";
+import { useSnackbar } from "notistack";
 
 export const initProductBC: IProduct = {
   pid: "",
@@ -73,6 +74,8 @@ const Product = () => {
   const dispatcher = useDispatch();
   const instance = useContext(WebContext);
   const navigation = useNavigate();
+
+  const { enqueueSnackbar} = useSnackbar();
 
   const base_contract = useContext(BaseContractContext);
   const walletConnection = useContext(WalletConnectionContext);
@@ -140,6 +143,9 @@ const Product = () => {
       let textData = await files[0].text();
       let parseObject = JSON.parse(textData);
       dispatcher(addOneCidUserDetails(parseObject));
+      enqueueSnackbar("Product Details Successfully Fetched from IPFS.", {
+        variant: "info"
+      })
     }
   };
 
@@ -151,6 +157,9 @@ const Product = () => {
       let textData = await files[0].text();
       let parseObject = JSON.parse(textData);
       dispatcher(addOneCidAllUserDetails(parseObject));
+      enqueueSnackbar("Product Details Successfully Fetched from IPFS.", {
+        variant: "info"
+      })
     }
   };
 
@@ -172,10 +181,6 @@ const Product = () => {
       // If Product is not found, search it here
       setIsUserProd(false);
       let product = allProducts.filter((item: IProduct) => item.cid === cid)[0];
-
-      console.log(product);
-      console.log(allProducts);
-      console.log(allCidDetails);
 
       if (product) {
         setCurrentProductBC({ ...product });
@@ -207,9 +212,15 @@ const Product = () => {
         amount: "0",
         meta: "delete_product",
       });
+      enqueueSnackbar("Product deleted from your store.", {
+        variant: "warning"
+      })
       console.log(res);
     } catch (e) {
       console.log(e);
+      enqueueSnackbar("Some error Occured Check the logs.", {
+        variant: "error"
+      })
     }
   };
 
