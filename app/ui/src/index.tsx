@@ -4,7 +4,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import App from "./App";
 import theme from "./theme";
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
 import { store } from "./redux/store";
 import { Provider } from "react-redux";
 import { SnackbarProvider } from "notistack";
@@ -172,7 +172,7 @@ initializeContract().then(
   }) => {
     ReactDOM.render(
       <Provider store={store}>
-        <BrowserRouter>
+        <HashRouter>
           <ThemeProvider theme={theme}>
             {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
             <CssBaseline />
@@ -205,7 +205,7 @@ initializeContract().then(
               </BaseContractContext.Provider>
             </WalletConnectionContext.Provider>
           </ThemeProvider>
-        </BrowserRouter>
+        </HashRouter>
       </Provider>,
       document.querySelector("#root")
     );

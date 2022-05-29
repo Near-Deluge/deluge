@@ -75,7 +75,7 @@ const Product = () => {
   const instance = useContext(WebContext);
   const navigation = useNavigate();
 
-  const { enqueueSnackbar} = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
 
   const base_contract = useContext(BaseContractContext);
   const walletConnection = useContext(WalletConnectionContext);
@@ -89,12 +89,18 @@ const Product = () => {
       let res = store.products.filter((ipid) => ipid === item.pid);
       if (res.length > 0) {
         dispatcher(addItem({ product: item, store: store, qty: 1 }));
+        enqueueSnackbar(`Product ${item.name} Added to Cart.`, {
+          variant: "success",
+        });
       }
     });
   };
 
   const handleRemoveItem = (pid: string) => {
     dispatcher(removeItem(pid));
+    enqueueSnackbar(`Successfully Removed Item from Cart.`, {
+      variant: "success",
+    });
   };
 
   // Hook to check if product is in the cart
@@ -144,8 +150,8 @@ const Product = () => {
       let parseObject = JSON.parse(textData);
       dispatcher(addOneCidUserDetails(parseObject));
       enqueueSnackbar("Product Details Successfully Fetched from IPFS.", {
-        variant: "info"
-      })
+        variant: "info",
+      });
     }
   };
 
@@ -158,8 +164,8 @@ const Product = () => {
       let parseObject = JSON.parse(textData);
       dispatcher(addOneCidAllUserDetails(parseObject));
       enqueueSnackbar("Product Details Successfully Fetched from IPFS.", {
-        variant: "info"
-      })
+        variant: "info",
+      });
     }
   };
 
@@ -213,14 +219,14 @@ const Product = () => {
         meta: "delete_product",
       });
       enqueueSnackbar("Product deleted from your store.", {
-        variant: "warning"
-      })
+        variant: "warning",
+      });
       console.log(res);
     } catch (e) {
       console.log(e);
       enqueueSnackbar("Some error Occured Check the logs.", {
-        variant: "error"
-      })
+        variant: "error",
+      });
     }
   };
 

@@ -36,8 +36,9 @@ import ProductView from "./pages/product";
 import UpdateProduct from "./pages/updateProduct";
 import Account from "./pages/account";
 import Cart from "./pages/cart";
-import { store } from "./redux/store";
+
 import CompleteOrder from "./pages/completeOrder";
+import NotFound404 from "./pages/404";
 
 // TODO: Fix this to concrete types from any
 type IApp = {
@@ -159,22 +160,6 @@ export default function App({
 
     fetch_and_set_all_cids(allProducts);
 
-    // Unsafe code ahead
-    // let obj: any = {};
-    // stores.forEach((item: IStore) => {
-    //   let prods = item.products;
-    //   if(prods.length > 0) {
-    //     prods.forEach((prodItem) => {
-    //       let res = allProducts.filter((vals) => vals.pid === prodItem);
-    //       if(res.length > 1) {
-    //         obj[prodItem.toString()] = item.id; 
-    //       }
-    //     })
-    //   }
-    //   console.log(obj)
-    // });
-    // console.log(obj);
-
   };
 
 
@@ -214,6 +199,7 @@ export default function App({
           <Route path="/account" element={<Account />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/complete_order" element={<CompleteOrder />} />
+          <Route path="*" element={<NotFound404 />} />
         </Routes>
       </Container>
       <Footer />
