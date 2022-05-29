@@ -23,6 +23,21 @@ import { change_stable_to_human } from "../utils/utils";
 import { Status } from "../utils/interface";
 import { ATTACHED_GAS } from "./cart";
 
+export const parseStatusToUi = (status: string) => {
+  switch (status) {
+    case "PENDING":
+      return <Chip color="info" label="PENDING" />;
+    case "INTRANSIT":
+      return <Chip color="secondary" label="INTRANSIT" />;
+    case "COMPLETED":
+      return <Chip color="success" label="COMPLETED" />;
+    case "SCHEDULED":
+      return <Chip color="primary" label="SCHEDULED" />;
+    case "CANCELLED":
+      return <Chip color="error" label="CANCELLED" />;
+  }
+};
+
 const Account = () => {
   const base_contract = useContext(BaseContractContext);
   const dlgt_contract = useContext(DLGTContractContext);
@@ -127,21 +142,6 @@ const Account = () => {
       args: {},
       amount: new BN(ONE_NEAR).toFixed(0).toString(),
     });
-  };
-
-  const parseStatusToUi = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return <Chip color="info" label="PENDING" />;
-      case "INTRANSIT":
-        return <Chip color="secondary" label="INTRANSIT" />;
-      case "COMPLETED":
-        return <Chip color="success" label="COMPLETED" />;
-      case "SCHEDULED":
-        return <Chip color="primary" label="SCHEDULED" />;
-      case "CANCELLED":
-        return <Chip color="error" label="CANCELLED" />;
-    }
   };
 
   const cancelOrder = async (order: Order) => {
@@ -364,6 +364,7 @@ const Account = () => {
                         variant="contained"
                         color="primary"
                         onClick={() => intransitOrder(order)}
+                        sx={{marginRight: "10px"}}
                       >
                         Order INTRASIT
                       </Button>
@@ -377,25 +378,7 @@ const Account = () => {
                       </Button>
                     </React.Fragment>
                   )}
-                  {order.status === "INTRANSIT" && (
-                    <React.Fragment>
-                      <TextField
-                        inputRef={seedRef}
-                        placeholder="Enter Secret to Complete Order"
-                      />
-                      <Button
-                        variant="contained"
-                        color="success"
-                        onClick={() => {
-                          if (seedRef.current !== null) {
-                            completeOrder(order, seedRef.current.value);
-                          }
-                        }}
-                      >
-                        Complete Order
-                      </Button>
-                    </React.Fragment>
-                  )}
+                  
                 </Box>
               </Paper>
             );
