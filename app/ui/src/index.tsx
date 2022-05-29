@@ -7,6 +7,7 @@ import theme from "./theme";
 import { BrowserRouter } from "react-router-dom";
 import { store } from "./redux/store";
 import { Provider } from "react-redux";
+import { SnackbarProvider } from "notistack";
 import "@fontsource/sora";
 import "./index.css";
 
@@ -16,6 +17,7 @@ import { ConnectConfig, WalletConnection, Contract } from "near-api-js";
 import { ContractMethods } from "near-api-js/lib/contract";
 import { RATING_CONTRACT_NAME, STABLECOIN_CONTRACT_NAME } from "./config";
 import { Web3Storage } from "web3.storage";
+import { Slide } from "@mui/material";
 
 // TODO: Remove it before deploying to world
 const WEB3_STORAGE_API =
@@ -139,8 +141,6 @@ const initializeContract = async () => {
   const rating_contract = await initializeRatingContract(walletConnection);
   const dlgt_contract = await initializeStableCoin(walletConnection);
 
-  
-
   return {
     base_contract,
     rating_contract,
@@ -181,14 +181,24 @@ initializeContract().then(
                 <RatingContractContext.Provider value={rating_contract}>
                   <DLGTContractContext.Provider value={dlgt_contract}>
                     <WebContext.Provider value={web3Instance}>
-                      <App
-                        rating_contract={rating_contract}
-                        dlgt_contract={dlgt_contract}
-                        base_contract={base_contract}
-                        currentUser={currentUser}
-                        nearConfig={nearConfig}
-                        wallet={walletConnection}
-                      />
+                      <SnackbarProvider
+                        maxSnack={5}
+                        autoHideDuration={3000}
+                        anchorOrigin={{
+                          vertical: "bottom",
+                          horizontal: "right",
+                        }}
+                        TransitionComponent={Slide}
+                      >
+                        <App
+                          rating_contract={rating_contract}
+                          dlgt_contract={dlgt_contract}
+                          base_contract={base_contract}
+                          currentUser={currentUser}
+                          nearConfig={nearConfig}
+                          wallet={walletConnection}
+                        />
+                      </SnackbarProvider>
                     </WebContext.Provider>
                   </DLGTContractContext.Provider>
                 </RatingContractContext.Provider>

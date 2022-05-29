@@ -36,12 +36,15 @@ import { fromJSON, stringify } from "flatted";
 
 import * as nearAPI from "near-api-js";
 
+// Jdenticon doesn't have type interface so ts-ignore
 // @ts-ignore
 import Jdenticon from "react-jdenticon";
+
 import { Link } from "react-router-dom";
 import { setQuantityItem } from "../redux/slices/cart.slice";
 import { Close, ShuffleOutlined } from "@mui/icons-material";
 
+// Boatload of Gas
 export const ATTACHED_GAS = "300000000000000";
 
 export const AddressForm: React.FC<{

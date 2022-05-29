@@ -19,6 +19,8 @@ import { PaddedDividerSpacer } from "../../pages/product";
 import { useDispatch, useSelector } from "react-redux";
 import { addItem, removeItem } from "../../redux/slices/cart.slice";
 
+import { useSnackbar } from "notistack";
+
 type IProductCard = {
   img: string;
   seller: string;
@@ -48,6 +50,9 @@ const ProductCard: React.FC<IProductCard> = ({
   productBC,
 }) => {
   const [fav, setFav] = useState(true);
+
+  const { enqueueSnackbar } = useSnackbar();
+
   const dispatcher = useDispatch();
 
   const navigate = useNavigate();
@@ -71,12 +76,18 @@ const ProductCard: React.FC<IProductCard> = ({
       let res = store.products.filter((ipid) => ipid === item.pid);
       if (res.length > 0) {
         dispatcher(addItem({ product: item, store: store, qty: 1 }));
+        enqueueSnackbar(`Product ${item.name} Added to Cart.`, {
+          variant: "success"
+        })
       }
     });
   };
 
   const handleRemoveItem = (pid: string) => {
     dispatcher(removeItem(pid));
+    enqueueSnackbar(`Successfully Removed Item from Cart.`, {
+      variant: "success"
+    })
   };
 
   const return_stars = (rating?: number) => {
