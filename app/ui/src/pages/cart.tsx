@@ -61,7 +61,7 @@ export const AddressForm: React.FC<{
   handleClose,
 }) => {
   return (
-    <Grid container>
+    <Grid container maxHeight={"100vh"} sx={{overflowY: "scroll"}}>
       <Grid item xs={1} />
       <Grid
         item
@@ -70,6 +70,7 @@ export const AddressForm: React.FC<{
         display="flex"
         alignItems="center"
         justifyContent={"center"}
+    
       >
         <Paper sx={{ padding: "20px" }}>
           <Box display={"flex"}>

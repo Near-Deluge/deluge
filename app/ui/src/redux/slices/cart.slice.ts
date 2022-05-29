@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { LineItem, Order, Product, Status, Store } from "../../utils/interface";
 
 import { v4 as uuid } from "uuid";
-import { store } from "../store";
+
 import { change_stable_to_human } from "../../utils/utils";
 
 export interface CartState {
