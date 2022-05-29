@@ -37,6 +37,7 @@ import UpdateProduct from "./pages/updateProduct";
 import Account from "./pages/account";
 import Cart from "./pages/cart";
 import { store } from "./redux/store";
+import CompleteOrder from "./pages/completeOrder";
 
 // TODO: Fix this to concrete types from any
 type IApp = {
@@ -212,6 +213,7 @@ export default function App({
           <Route path="/products/:cid/update" element={<UpdateProduct />} />
           <Route path="/account" element={<Account />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/complete_order" element={<CompleteOrder />} />
         </Routes>
       </Container>
       <Footer />

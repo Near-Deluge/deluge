@@ -22,6 +22,7 @@ import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 import HomeIcon from "@mui/icons-material/Home";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import {
+  Checkroom,
   CheckRounded,
   LoginOutlined,
   LogoutOutlined,
@@ -154,6 +155,13 @@ const Navbar: React.FC<INavbar> = ({
                   </Link>
                 )}
               </div>
+              <div className="nav-link">
+                <Link to="complete_order">
+                  <Typography fontWeight={800} component={"p"}>
+                    Complete Order
+                  </Typography>
+                </Link>
+              </div>
             </Grid>
             <Grid
               item
@@ -185,7 +193,9 @@ const Navbar: React.FC<INavbar> = ({
                 </IconButton>
               )}
               <div style={{ marginLeft: 10 }}>
-                <Typography color="primary">{user && user.accountId} </Typography>
+                <Typography color="primary">
+                  {user && user.accountId}{" "}
+                </Typography>
                 <Tooltip title="1 N = 100 DLGT">
                   <Typography>
                     {walletDetails.total
@@ -347,19 +357,31 @@ const Navbar: React.FC<INavbar> = ({
               Home
             </MenuItem>
           </Link>
-          <MenuItem>
-            <ListItemIcon>
-              <AccountCircleIcon color="primary" />
-            </ListItemIcon>
-            Account
-          </MenuItem>
+          <Link to="complete_order">
+            <MenuItem>
+              <ListItemIcon>
+                <Checkroom color="primary" />
+              </ListItemIcon>
+              Complete Order
+            </MenuItem>
+          </Link>
+          <Link to="/account">
+            <MenuItem>
+              <ListItemIcon>
+                <AccountCircleIcon color="primary" />
+              </ListItemIcon>
+              Account
+            </MenuItem>
+          </Link>
           <Divider />
-          <MenuItem>
-            <ListItemIcon>
-              <ShoppingCartIcon color="primary" />
-            </ListItemIcon>
-            Cart
-          </MenuItem>
+          <Link to="/cart">
+            <MenuItem>
+              <ListItemIcon>
+                <ShoppingCartIcon color="primary" />
+              </ListItemIcon>
+              Cart
+            </MenuItem>
+          </Link>
           {curUserState === null ? (
             <Link to={"/add_store"}>
               <MenuItem>
