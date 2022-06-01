@@ -11,12 +11,14 @@ import {
   Divider,
   InputAdornment,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
-import React, { useContext, useRef } from "react";
+import React, { useContext, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   BaseContractContext,
   DLGTContractContext,
+  KeyStoreContext,
   WalletConnectionContext,
   WebContext,
 } from "..";
@@ -32,6 +34,9 @@ import { change_stable_to_human } from "../utils/utils";
 import CryptoJS from "crypto-js";
 import Randomstring from "randomstring";
 
+// @ts-ignore
+import { ecEncrypt, ecDecrypt } from "deluge-helper";
+
 import { fromJSON, stringify } from "flatted";
 
 import * as nearAPI from "near-api-js";
@@ -43,17 +48,22 @@ import Jdenticon from "react-jdenticon";
 import { Link } from "react-router-dom";
 import { setQuantityItem } from "../redux/slices/cart.slice";
 import { Close, ShuffleOutlined } from "@mui/icons-material";
+import { KeyStore } from "near-api-js/lib/key_stores";
+import bs58 from "bs58";
+import { useSnackbar } from "notistack";
 
 // Boatload of Gas
 export const ATTACHED_GAS = "300000000000000";
 
 export const AddressForm: React.FC<{
+  loading: boolean;
   addressState: Order_Specification;
   secretInputRef: any;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => any;
   handleSubmitClick: () => any;
   handleClose: () => any;
 }> = ({
+  loading,
   addressState,
   secretInputRef,
   handleChange,
@@ -61,7 +71,7 @@ export const AddressForm: React.FC<{
   handleClose,
 }) => {
   return (
-    <Grid container maxHeight={"100vh"} sx={{overflowY: "scroll"}}>
+    <Grid container maxHeight={"100vh"} sx={{ overflowY: "scroll" }}>
       <Grid item xs={1} />
       <Grid
         item
@@ -70,7 +80,6 @@ export const AddressForm: React.FC<{
         display="flex"
         alignItems="center"
         justifyContent={"center"}
-    
       >
         <Paper sx={{ padding: "20px" }}>
           <Box display={"flex"}>
@@ -196,8 +205,12 @@ export const AddressForm: React.FC<{
                 ),
               }}
             />
-            <Button variant="contained" onClick={handleSubmitClick}>
-              Send Order Details
+            <Button
+              variant="contained"
+              onClick={handleSubmitClick}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress /> : "Send Order Details"}
             </Button>
           </Box>
         </Paper>
@@ -300,13 +313,27 @@ const Cart = () => {
   const cartOrders = useSelector((state: any) => state.cartSlice.orders);
   const cartTotal = useSelector((state: any) => state.cartSlice.total);
   const userDetails = useSelector((state: any) => state.contractSlice.user);
+  const allStores = useSelector((state: any) => state.storeSlice.allStore);
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const allProducts = useSelector(
     (state: any) => state.productSlice.allProducts
   );
 
+  const [loading, setLoading] = useState(false);
+
   const getProductBCFromPid = (pid: string) => {
     let res = allProducts.filter((prod: Product) => prod.pid === pid);
+    if (res.length > 0) {
+      return res[0];
+    } else {
+      return null;
+    }
+  };
+
+  const getStoreFromStoreId = (store_id: string) => {
+    let res = allStores.filter((store: Store) => store.id === store_id);
     if (res.length > 0) {
       return res[0];
     } else {
@@ -321,11 +348,13 @@ const Cart = () => {
 
   const [currentOrderId, setCurrentOrderId] = React.useState<string>("");
 
+
   React.useEffect(() => {
     setAddressState({
       ...addressState,
       userId: userDetails.accountId,
     });
+    
   }, [userDetails]);
 
   const [addressState, setAddressState] = React.useState<Order_Specification>({
@@ -347,15 +376,20 @@ const Cart = () => {
     });
   };
 
+  const convertObjectValuesToHex = (object: any) => {
+    const keys = Object.keys(object);
+    let newObj: any = {};
+    keys.map((key) => {
+      newObj[key] = Buffer.from(object[key]).toString("hex");
+    });
+    return newObj;
+  };
+
   const handleSubmitClick = async () => {
     const ipfsClient = await web3Instance;
-    console.log(addressState);
-    let file = new File([JSON.stringify(addressState)], "addressDetails.txt");
-    const cid = await ipfsClient.put([file]);
-    console.log(cid);
+  
     if (secretInputRef !== null) {
-      console.log(secretInputRef.current?.value);
-
+     
       const secret = secretInputRef.current?.value;
 
       if (secret && secret.length > 5) {
@@ -363,7 +397,36 @@ const Cart = () => {
           (order: Order) => order.id === currentOrderId
         );
         if (res.length > 0) {
+
+          // Fail Fast
+          if (userDetails.accountId === res[0].seller_id) {
+            enqueueSnackbar("You can't buy from your own store.", {
+              variant: "error"
+            });
+            return;
+          }
+
+          setLoading(true);
           let hash = await CryptoJS.SHA256(secret).toString(CryptoJS.enc.Hex);
+
+          let seller = getStoreFromStoreId(res[0].seller_id);
+          console.log(seller);
+          console.log(JSON.stringify(addressState), seller);
+
+          const publicObjectEncrypted = ecEncrypt(
+            JSON.stringify(addressState),
+            seller.pub_key
+          );
+
+          // Parse All data to Hex before storing in bc
+          const dataObj = convertObjectValuesToHex(publicObjectEncrypted);
+
+          let file = new File(
+            [JSON.stringify(dataObj)],
+            "encryptedAddressDetails.txt"
+          );
+          const cid = await ipfsClient.put([file]);
+          console.log(cid);
 
           let finalObj: Order = {
             ...res[0],
@@ -373,10 +436,9 @@ const Cart = () => {
             status: Status[Status.PENDING],
           };
 
-          let strMsg = stringify(finalObj);
+          // let strMsg = stringify(finalObj);
+
           const base_contract_name = base_contract?.contractId;
-  
-          console.log(typeof strMsg);
 
           const args = {
             receiver_id: base_contract_name,
@@ -385,13 +447,10 @@ const Cart = () => {
             msg: JSON.stringify({ ...finalObj }),
           };
 
-          if (finalObj.customer_account_id === finalObj.seller_id) {
-            alert("You can't buy from your own store.");
-            return;
-          }
+          // console.log(JSON.parse(args.msg));
+          setLoading(false);
 
           // Send transaction to the Blockchain
-
           // @ts-ignore
           dlgt_contract?.ft_transfer_call({
             args: {
@@ -430,6 +489,7 @@ const Cart = () => {
         aria-describedby="order-address-buyer-form"
       >
         <AddressForm
+          loading={loading}
           addressState={addressState}
           secretInputRef={secretInputRef}
           handleChange={handleChange}

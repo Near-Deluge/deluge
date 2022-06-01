@@ -1,15 +1,23 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import { Button, Container, Grid, Typography } from "@mui/material";
 
 import CreateStore from "../components/stores/createStore";
 
 import AddBusiness from "@mui/icons-material/AddBusiness";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Store } from "../utils/interface";
 import { ONE_NEAR } from "../config";
 import BN from "big.js";
 import { useNavigate } from "react-router-dom";
+
+import bs58 from "bs58";
+
+import { KeyStoreContext, WalletConnectionContext } from "..";
+import { setUser, User } from "../redux/slices/contract.slice";
+import { useSnackbar } from "notistack";
+import { change_near_to_human } from "../utils/utils";
+import { ATTACHED_GAS } from "./cart";
 
 type IAddStore = {
   base_contract: any;
@@ -19,6 +27,12 @@ type IAddStore = {
 const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
   const curStore = useSelector((state: any) => state.storeSlice.currentStore);
   const user = useSelector((state: any) => state.contractSlice.user);
+
+  const walletConnection = useContext(WalletConnectionContext);
+  const dispatcher = useDispatch();
+
+  const { enqueueSnackbar } = useSnackbar();
+
   const navigation = useNavigate();
   const [local, setLocal] = React.useState({
     storage_deposit: 0,
@@ -30,6 +44,27 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
     }
   });
 
+  // Check if user exists on redux, if not fetch it
+  React.useState(() => {
+    (async () => {
+      if (
+        !user.accountId &&
+        user.accountId.length === 0 &&
+        walletConnection !== null
+      ) {
+        const currentUser: User = {
+          // Gets the accountId as a string
+          accountId: walletConnection.getAccountId(),
+          // Gets the user's token balance
+          balance: (await walletConnection.account().state()).amount,
+          store: null,
+        };
+
+        dispatcher(setUser(currentUser));
+      }
+    })();
+  });
+
   React.useEffect(() => {
     (async () => {
       const res = await base_contract.storage_balance_of({
@@ -39,8 +74,15 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
       setLocal({
         storage_deposit: res,
       });
+
+      enqueueSnackbar(
+        `Fetched Storage Successfully: ${change_near_to_human(res)} N`,
+        {
+          variant: "success",
+        }
+      );
     })();
-  }, []);
+  }, [user]);
 
   const handleStorageDeposit = () => {
     base_contract.storage_deposit({
@@ -66,14 +108,16 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
       args: {
         store: finalStore,
       },
+      gas: ATTACHED_GAS,
+      // Sending 5 Near as Insurance for now.
       amount: new BN(ONE_NEAR).mul(5).toFixed().toString(),
       meta: "create_store",
     });
   };
   return (
-    <Container>
-      <Grid xs={12} sm={2} />
-      <Grid xs={12} sm={8}>
+    <Grid container>
+      <Grid item xs={12} sm={2} />
+      <Grid item xs={12} sm={8}>
         <Typography variant="h4" textAlign={"center"} gutterBottom>
           <AddBusiness fontSize="large" />
           Create a Store
@@ -99,8 +143,8 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
           </React.Fragment>
         )}
       </Grid>
-      <Grid xs={12} sm={2} />
-    </Container>
+      <Grid item xs={12} sm={2} />
+    </Grid>
   );
 };
 

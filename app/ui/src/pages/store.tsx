@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import React from "react";
 import { useSelector } from "react-redux";
-import { Link as ReduxLink } from "react-router-dom";
+import { Link as ReduxLink, useNavigate } from "react-router-dom";
 import Collapse from "@mui/material/Collapse";
 
 import AddProduct from "../components/products/addProduct";
@@ -23,7 +23,15 @@ import StoreProductCard from "../components/products/store_product_card";
 type IStore = {};
 
 const Store: React.FC<IStore> = ({}) => {
+  const navigation = useNavigate();
   const { store } = useSelector((state: any) => state.contractSlice.user);
+
+  React.useEffect(() => {
+    if (store === null) {
+      navigation("/add_store", { replace: true });
+    }
+  });
+
   const userProducts = useSelector(
     (state: any) => state.productSlice.userProducts
   );
@@ -50,6 +58,9 @@ const Store: React.FC<IStore> = ({}) => {
             >
               <Typography color="primary" variant="h4">
                 {store.id}
+              </Typography>
+              <Typography color="success" variant="body2" fontWeight={"bold"}>
+                Public Key: {store.pub_key}
               </Typography>
               <Typography>Shop Name: {store.name}</Typography>
               <Typography>

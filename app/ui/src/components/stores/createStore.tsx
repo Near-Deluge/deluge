@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import {
   setField,
@@ -10,32 +10,50 @@ import {
 import { Store } from "../../utils/interface";
 import { useDispatch, useSelector } from "react-redux";
 import { Button, Container, Divider, TextField } from "@mui/material";
+import { KeyStoreContext, WalletConnectionContext } from "../..";
 
 const CreateStore: React.FC<{
   handleSubmit: () => any;
-}> = ({handleSubmit}) => {
+}> = ({ handleSubmit }) => {
   const dispatcher = useDispatch();
   const contract = useSelector((state: any) => state.contractSlice);
   const curStore = useSelector((state: any) => state.storeSlice.currentStore);
+  const walletConnection = useContext(WalletConnectionContext);
+  const keyStore = useContext(KeyStoreContext);
 
   React.useEffect(() => {
-    let store: Store = {
-      id: contract.user.accountId,
-      address: "",
-      name: "",
-      lat_lng: {
-        latitude: 0.0,
-        longitude: 0.0,
-      },
-      website: "",
-      logo: "",
-      country: "",
-      state: "",
-      city: "",
-      products: [],
-    };
+    (async () => {
+      const keyP = await keyStore?.getKey(
+        walletConnection?._networkId || "testnet",
+        contract.user.accountId
+      );
 
-    dispatcher(setStore(store));
+      let shopPKey = "";
+
+      if (keyP) {
+        shopPKey = Buffer.from(keyP.getPublicKey().data).toString("hex");
+        console.log(shopPKey);
+      }
+
+      let store: Store = {
+        id: contract.user.accountId,
+        address: "",
+        name: "",
+        lat_lng: {
+          latitude: 0.0,
+          longitude: 0.0,
+        },
+        website: "",
+        logo: "",
+        country: "",
+        state: "",
+        pub_key: shopPKey,
+        city: "",
+        products: [],
+      };
+
+      dispatcher(setStore(store));
+    })();
   }, []);
 
   const handleChange = (e: any) => {
@@ -55,6 +73,15 @@ const CreateStore: React.FC<{
           disabled
           value={curStore.id}
           label="Id"
+          fullWidth
+          sx={{marginBottom: "15px"}}
+        />
+        <TextField
+          name="Current Public Key"
+          disabled
+          value={curStore.pub_key}
+          label="Public Key"
+          helperText="Buyers will use this key to encrypt their addresses so that only you would be able to unlock it."
           fullWidth
         />
         <Divider sx={{ margin: "20px 0px" }} />
@@ -167,7 +194,10 @@ const CreateStore: React.FC<{
           }}
         />
         <Divider sx={{ margin: "20px 0px" }} />
-        <Button variant="contained" onClick={handleSubmit}> Create Store </Button>
+        <Button variant="contained" onClick={handleSubmit}>
+          {" "}
+          Create Store{" "}
+        </Button>
       </Container>
     )
   );
