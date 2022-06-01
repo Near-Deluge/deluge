@@ -118,20 +118,22 @@ const cartSlice = createSlice({
         // Calculate Totals for Ordering
 
         let newOrders = state.orders.map((order: Order) => {
-          let total = order.payload.amount;
-          order.payload.line_items.forEach((lineitem: LineItem) => {
-            total = (
-              parseFloat(
-                (
-                  parseFloat(change_stable_to_human(total)) +
-                  parseFloat(change_stable_to_human(lineitem.price)) *
-                    parseInt(lineitem.count.toString())
-                ).toString()
-              ) *
-              10 ** 8
-            ).toString();
-          });
-          order.payload.amount = total;
+          // let total = order.payload.amount;
+          // console.log("Total Before Adding: ",typeof total);
+          // order.payload.line_items.forEach((lineitem: LineItem) => {
+          //   total = (
+          //     (parseFloat(change_stable_to_human(total)) +
+          //       parseFloat(change_stable_to_human(lineitem.price)) *
+          //         parseInt(lineitem.count.toString())) *
+          //     10 ** 8
+          //   ).toString();
+          // });
+          let lineItemTotal = order.payload.line_items.reduce((total, nextElem) => {
+            return total + parseFloat(nextElem.price)
+          }, 0)
+          
+          order.payload.amount = lineItemTotal.toString();
+          
           return order;
         });
         state.orders = newOrders;
@@ -200,7 +202,7 @@ const cartSlice = createSlice({
             10 ** 8
           ).toString();
         });
-        
+
         order.payload.amount = total;
         return order;
       });

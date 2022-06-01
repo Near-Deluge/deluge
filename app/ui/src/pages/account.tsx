@@ -7,12 +7,15 @@ import {
   Button,
   Chip,
   TextField,
+  Divider,
 } from "@mui/material";
 import React, { useContext, useRef } from "react";
 import {
   BaseContractContext,
   DLGTContractContext,
+  KeyStoreContext,
   WalletConnectionContext,
+  WebContext,
 } from "..";
 import { ONE_NEAR } from "../config";
 
@@ -22,6 +25,11 @@ import { Order } from "../utils/interface";
 import { change_stable_to_human } from "../utils/utils";
 import { Status } from "../utils/interface";
 import { ATTACHED_GAS } from "./cart";
+import { CIDString } from "web3.storage";
+import bs58 from "bs58";
+
+// @ts-ignore
+import { ecDecrypt } from "deluge-helper";
 
 export const parseStatusToUi = (status: string) => {
   switch (status) {
@@ -42,8 +50,10 @@ const Account = () => {
   const base_contract = useContext(BaseContractContext);
   const dlgt_contract = useContext(DLGTContractContext);
   const walletConnection = useContext(WalletConnectionContext);
-
+  const web3Instance = useContext(WebContext);
   const userDetails = useSelector((state: any) => state.contractSlice.user);
+  const [keyP, setKeyP] = React.useState<any>();
+  const keyC = useContext(KeyStoreContext);
 
   const [contract_details, setContractDetails] = React.useState<{
     stable_balance: any;
@@ -76,6 +86,13 @@ const Account = () => {
         });
 
         setShopOrders([...storeOrder]);
+
+        setKeyP(
+          await keyC?.getKey(
+            walletConnection?._networkId || "testnet",
+            await walletConnection?.getAccountId()
+          )
+        );
       }
     })();
   }, [userDetails]);
@@ -206,6 +223,74 @@ const Account = () => {
     }
   };
 
+  const [decryptedShopOrder, setDecryptedShopOrder] = React.useState<any>({});
+
+  const getDecryptedAddress = (cid: CIDString) => {
+    (async () => {
+      if (
+        decryptedShopOrder[cid] === undefined ||
+        decryptedShopOrder[cid] === null
+      ) {
+        const instance = await web3Instance;
+
+        const res = await instance.get(cid);
+        if (res && res.ok) {
+          const files = await res.files();
+          const content = await files[0].text();
+ 
+          if (keyP && keyP !== null) {
+            const userPrivateKey = bs58.decode(keyP.secretKey);
+
+            let dataObj = JSON.parse(content);
+
+            const decryptedData = ecDecrypt(
+              dataObj.encryptedData,
+              dataObj.encryptedKey,
+              dataObj.ephPubKey,
+              dataObj.authTag,
+              userPrivateKey
+            );
+
+            const decryptedAddress = JSON.parse(
+              Buffer.from(decryptedData.decrypted[0]).toString()
+            );
+
+            setDecryptedShopOrder({
+              ...decryptedShopOrder,
+              [cid]: decryptedAddress,
+            });
+          }
+        }
+      }
+    })();
+
+    let objVal = decryptedShopOrder[cid];
+    if (objVal) {
+      return (
+        <Box>
+          <Typography>Customer Name: {objVal.name}</Typography>
+          <Typography color="primary" variant="caption">
+            Customer Account: {objVal.userId}
+          </Typography>
+          <Typography variant="body2" fontWeight={"bold"}>
+            Customer Email: {objVal.email}
+          </Typography>
+          <Typography variant="body2" fontWeight={"bold"}>
+            Customer Phone No.: {objVal.phone}
+          </Typography>
+          <Typography variant="body2" fontWeight={"bold"}>
+            Customer Address: {objVal.address}, {objVal.district},{" "}
+            {objVal.state}, {objVal.country}
+          </Typography>
+          <Typography variant="body2" fontWeight={"bold"}>
+            Customer PinCode: {objVal.pincode}
+          </Typography>
+        </Box>
+      );
+    }
+    return <Typography color="error">Address Not Decrypted Yet</Typography>;
+  };
+
   return (
     <Paper sx={{ padding: "10px" }}>
       <Typography fontWeight={"bold"} variant="h5" textAlign={"center"}>
@@ -334,6 +419,13 @@ const Account = () => {
                 </Typography>
                 <Typography>Seller ID: {order.seller_id}</Typography>
                 <Typography>CID to Address Details: {order.cid}</Typography>
+                <Paper elevation={4} sx={{ padding: "10px 20px", margin: "10px" }}>
+                  <Typography fontWeight={"bold"} gutterBottom>
+                    Decrypted User Details
+                  </Typography>
+                  <Divider />
+                  {getDecryptedAddress(order.cid)}
+                </Paper>
                 <Box marginBottom={"20px"}>
                   <Typography>Status</Typography>
                   {parseStatusToUi(order.status)}
@@ -364,7 +456,7 @@ const Account = () => {
                         variant="contained"
                         color="primary"
                         onClick={() => intransitOrder(order)}
-                        sx={{marginRight: "10px"}}
+                        sx={{ marginRight: "10px" }}
                       >
                         Order INTRASIT
                       </Button>
@@ -378,7 +470,6 @@ const Account = () => {
                       </Button>
                     </React.Fragment>
                   )}
-                  
                 </Box>
               </Paper>
             );
