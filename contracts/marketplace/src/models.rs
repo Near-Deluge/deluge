@@ -72,6 +72,7 @@ pub struct Store {
     pub country : String,
     pub state: String,
     pub city: String,
+    pub pub_key: String,
     pub products: Vec<String>
 }
 

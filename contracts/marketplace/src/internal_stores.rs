@@ -30,6 +30,12 @@ impl DelugeBase {
         // TODO: Check if enought NEAR has been supplied for storage costs.
         self.check_storage_requirement(store.clone());
 
+        // Check if pub_key Length is exactly 64;
+        assert!(
+            store.pub_key.len() == 64,
+            "Public Key must be a 64 Char Hex String."
+        );
+
         // Typical Usecase: Creates a New Store -> Generates a new NFT Contract for that store
 
         // Account IDs are in format of shop_name_deluge
@@ -79,6 +85,7 @@ impl DelugeBase {
     pub fn update_store(
         &mut self,
         id: String,
+        pub_key: Option<String>,
         name: Option<String>,
         address: Option<String>,
         lat_lng: Option<LatLng>,
@@ -94,6 +101,15 @@ impl DelugeBase {
             env::predecessor_account_id() == id,
             "Only Owner of Store ID can edit it's own store details."
         );
+
+        match pub_key {
+            Some(x) => {
+                // Check if pub_key Length is exactly 64;
+                assert!(x.len() == 64, "Public Key must be a 64 Char Hex String.");
+                store.pub_key = x;
+            }
+            None => {}
+        }
 
         match name {
             Some(x) => store.name = x,
@@ -255,7 +271,7 @@ mod tests {
                 country: "India".to_string(),
                 state: "Delhi".to_string(),
                 logo: "https://ramesh_store.com/logo.png".to_string(),
-
+                pub_key: "da202062e68f3a7f156142e360665c0550b6923c385c7ee109a0a1141f022dff".to_string(),
                 website: "https://ramesh_store.com".to_string(),
                 city: "South Delhi".to_string(),
                 products: vec![]
@@ -282,7 +298,7 @@ mod tests {
                 country: "India".to_string(),
                 state: "Delhi".to_string(),
                 logo: "https://ramesh_store.com/logo.png".to_string(),
-
+                pub_key: "da202062e68f3a7f156142e360665c0550b6923c385c7ee109a0a1141f022dff".to_string(),
                 website: "https://ramesh_store.com".to_string(),
                 city: "South Delhi".to_string(),
                 products: vec![]
@@ -310,6 +326,7 @@ mod tests {
             country: "India".to_string(),
             state: "Delhi".to_string(),
             logo: "https://ramesh_store.com/logo.png".to_string(),
+            pub_key: "da202062e68f3a7f156142e360665c0550b6923c385c7ee109a0a1141f022dff".to_string(),
             website: "https://ramesh_store.com".to_string(),
             city: "South Delhi".to_string(),
             products: vec![],
