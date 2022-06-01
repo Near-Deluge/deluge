@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import { Button, Container, Grid, Typography } from "@mui/material";
 
@@ -11,6 +11,10 @@ import { ONE_NEAR } from "../config";
 import BN from "big.js";
 import { useNavigate } from "react-router-dom";
 
+import bs58 from "bs58";
+
+import { KeyStoreContext, WalletConnectionContext } from "..";
+
 type IAddStore = {
   base_contract: any;
   wallet: any;
@@ -19,19 +23,23 @@ type IAddStore = {
 const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
   const curStore = useSelector((state: any) => state.storeSlice.currentStore);
   const user = useSelector((state: any) => state.contractSlice.user);
+
+  const ketStore = useContext(KeyStoreContext);
+
   const navigation = useNavigate();
   const [local, setLocal] = React.useState({
     storage_deposit: 0,
   });
 
   React.useEffect(() => {
-    if (user.store) {
-      navigation("/store", { replace: true });
-    }
+    // if (user.store) {
+    //   navigation("/store", { replace: true });
+    // }
   });
 
   React.useEffect(() => {
     (async () => {
+      console.log(user.accountId);
       const res = await base_contract.storage_balance_of({
         account_id: user.accountId,
       });
@@ -39,6 +47,13 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
       setLocal({
         storage_deposit: res,
       });
+
+      const keyP = await ketStore?.getKey("testnet", user.accountId);
+
+      if (keyP) {
+        const shopPKey = Buffer.from(keyP.getPublicKey().data).toString("hex");
+        console.log(shopPKey);
+      }
     })();
   }, []);
 
@@ -71,9 +86,9 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
     });
   };
   return (
-    <Container>
-      <Grid xs={12} sm={2} />
-      <Grid xs={12} sm={8}>
+    <Grid container>
+      <Grid item xs={12} sm={2} />
+      <Grid item xs={12} sm={8}>
         <Typography variant="h4" textAlign={"center"} gutterBottom>
           <AddBusiness fontSize="large" />
           Create a Store
@@ -99,8 +114,8 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
           </React.Fragment>
         )}
       </Grid>
-      <Grid xs={12} sm={2} />
-    </Container>
+      <Grid item xs={12} sm={2} />
+    </Grid>
   );
 };
 

@@ -18,6 +18,7 @@ import { ContractMethods } from "near-api-js/lib/contract";
 import { RATING_CONTRACT_NAME, STABLECOIN_CONTRACT_NAME } from "./config";
 import { Web3Storage } from "web3.storage";
 import { Slide } from "@mui/material";
+import { KeyStore } from "near-api-js/lib/key_stores";
 
 // TODO: Remove it before deploying to world
 const WEB3_STORAGE_API =
@@ -148,6 +149,7 @@ const initializeContract = async () => {
     currentUser,
     nearConfig,
     walletConnection,
+    keyStore,
   };
 };
 // Web3 Context Creation
@@ -158,6 +160,7 @@ export const WebContext = React.createContext(web3Instance);
 export const BaseContractContext = React.createContext<Contract | null>(null);
 export const RatingContractContext = React.createContext<Contract | null>(null);
 export const DLGTContractContext = React.createContext<Contract | null>(null);
+export const KeyStoreContext = React.createContext<KeyStore | null>(null);
 export const WalletConnectionContext =
   React.createContext<WalletConnection | null>(null);
 
@@ -169,6 +172,7 @@ initializeContract().then(
     walletConnection,
     dlgt_contract,
     rating_contract,
+    keyStore,
   }) => {
     ReactDOM.render(
       <Provider store={store}>
@@ -176,34 +180,36 @@ initializeContract().then(
           <ThemeProvider theme={theme}>
             {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
             <CssBaseline />
-            <WalletConnectionContext.Provider value={walletConnection}>
-              <BaseContractContext.Provider value={base_contract}>
-                <RatingContractContext.Provider value={rating_contract}>
-                  <DLGTContractContext.Provider value={dlgt_contract}>
-                    <WebContext.Provider value={web3Instance}>
-                      <SnackbarProvider
-                        maxSnack={5}
-                        autoHideDuration={3000}
-                        anchorOrigin={{
-                          vertical: "bottom",
-                          horizontal: "right",
-                        }}
-                        TransitionComponent={Slide}
-                      >
-                        <App
-                          rating_contract={rating_contract}
-                          dlgt_contract={dlgt_contract}
-                          base_contract={base_contract}
-                          currentUser={currentUser}
-                          nearConfig={nearConfig}
-                          wallet={walletConnection}
-                        />
-                      </SnackbarProvider>
-                    </WebContext.Provider>
-                  </DLGTContractContext.Provider>
-                </RatingContractContext.Provider>
-              </BaseContractContext.Provider>
-            </WalletConnectionContext.Provider>
+            <KeyStoreContext.Provider value={keyStore}>
+              <WalletConnectionContext.Provider value={walletConnection}>
+                <BaseContractContext.Provider value={base_contract}>
+                  <RatingContractContext.Provider value={rating_contract}>
+                    <DLGTContractContext.Provider value={dlgt_contract}>
+                      <WebContext.Provider value={web3Instance}>
+                        <SnackbarProvider
+                          maxSnack={5}
+                          autoHideDuration={3000}
+                          anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                          }}
+                          TransitionComponent={Slide}
+                        >
+                          <App
+                            rating_contract={rating_contract}
+                            dlgt_contract={dlgt_contract}
+                            base_contract={base_contract}
+                            currentUser={currentUser}
+                            nearConfig={nearConfig}
+                            wallet={walletConnection}
+                          />
+                        </SnackbarProvider>
+                      </WebContext.Provider>
+                    </DLGTContractContext.Provider>
+                  </RatingContractContext.Provider>
+                </BaseContractContext.Provider>
+              </WalletConnectionContext.Provider>
+            </KeyStoreContext.Provider>
           </ThemeProvider>
         </HashRouter>
       </Provider>,
