@@ -48,7 +48,7 @@ const UpdateStore: React.FC<{
         longitude: parseFloat(curStore.lat_lng.longitude),
       },
     };
-    console.log(finalState)
+    console.log(finalState);
     // Send Update Transaction Here.
     const res = await base_contract.update_store({
       args: { id: wallet.getAccountId(), ...finalState },
@@ -77,6 +77,16 @@ const UpdateStore: React.FC<{
           disabled
           value={curStore.id}
           label="Id"
+          fullWidth
+          sx={{
+            marginBottom: "10px",
+          }}
+        />
+        <TextField
+          name="pub_key"
+          disabled
+          value={curStore.pub_key}
+          label="Public Key"
           fullWidth
         />
         <Divider sx={{ margin: "20px 0px" }} />

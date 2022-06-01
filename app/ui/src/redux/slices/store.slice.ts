@@ -16,7 +16,8 @@ type ValidStoreField =
   | "country"
   | "state"
   | "city"
-  | "products";
+  | "products"
+  | "pub_key";
 
 const initialState = {} as StoreState;
 
@@ -27,8 +28,8 @@ export const storeSlice = createSlice({
     setStore(state, action: PayloadAction<Store>) {
       state.currentStore = action.payload;
     },
-    setAllStores(state,action: PayloadAction<Array<Store>>) {
-      state.allStore = [...action.payload]
+    setAllStores(state, action: PayloadAction<Array<Store>>) {
+      state.allStore = [...action.payload];
     },
     setField(
       state,
@@ -65,8 +66,7 @@ export const storeSlice = createSlice({
   },
 });
 
-export const { setStore, setField, setLat, setLon, setAllStores } = storeSlice.actions;
-
-
+export const { setStore, setField, setLat, setLon, setAllStores } =
+  storeSlice.actions;
 
 export default storeSlice.reducer;

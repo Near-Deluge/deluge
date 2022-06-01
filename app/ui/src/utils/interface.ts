@@ -16,6 +16,7 @@ export interface Store {
   country: String;
   state: String;
   city: String;
+  pub_key: String;
   products: Array<String>;
 }
 
