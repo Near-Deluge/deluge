@@ -6,7 +6,7 @@ impl DelugeBase {
     #[payable]
     pub fn create_product(&mut self, store_id: String, product: Product) -> String {
         assert_one_yocto();
-        // TODO: Store keys with storeid : SOme mechanism to have predictable key structure
+        // TODO: Store keys with storeid : Some mechanism to have predictable key structure
         let mut store = self.stores.get(&store_id).expect("Store does not exist");
         assert!(
             env::predecessor_account_id() == store_id,
@@ -18,6 +18,8 @@ impl DelugeBase {
 
         // TODO: Check if enough NEAR is present in storage costs.
         self.check_storage_product(product.clone());
+
+        // TODO: Check if product already exists in the store.
 
         // Update the persistent store
         self.products.insert(&pkey, &product);
