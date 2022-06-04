@@ -5,13 +5,15 @@ import contractSlice from "./slices/contract.slice";
 import storeSlice from "./slices/store.slice";
 import productSlice from "./slices/products.slice";
 import cartSlice from "./slices/cart.slice";
+import ratingSlice from "./slices/ratings.slice";
 
 export const store = configureStore({
   reducer: {
     contractSlice,
     storeSlice,
     productSlice,
-    cartSlice
+    cartSlice,
+    ratingSlice
   },
 
 });

@@ -8,6 +8,7 @@ export interface ProductsState {
   product_to_store: any;
   user_cid_details: Array<Product_Storage>;
   all_cid_details: Array<Product_Storage>;
+  allCids: { [key: string]: Product_Storage };
 }
 
 const initialState = {
@@ -15,7 +16,8 @@ const initialState = {
   allProducts: [],
   product_to_store: {},
   user_cid_details: [],
-  all_cid_details: []
+  all_cid_details: [],
+  allCids: {},
 } as ProductsState;
 
 export const productSlice = createSlice({
@@ -35,16 +37,20 @@ export const productSlice = createSlice({
     },
     addOneCidUserDetails(state, action: PayloadAction<Product_Storage>) {
       // Do a checked Add
-      let res = state.user_cid_details.filter((item) => item.product_id === action.payload.product_id);
-      if(res.length === 0){
+      let res = state.user_cid_details.filter(
+        (item) => item.product_id === action.payload.product_id
+      );
+      if (res.length === 0) {
         state.user_cid_details = [action.payload, ...state.user_cid_details];
       }
       // In Else case object will be already in the state
     },
     addOneCidAllUserDetails(state, action: PayloadAction<Product_Storage>) {
       // Do a checked Add
-      let res = state.all_cid_details.filter((item) => item.product_id === action.payload.product_id);
-      if(res.length === 0){
+      let res = state.all_cid_details.filter(
+        (item) => item.product_id === action.payload.product_id
+      );
+      if (res.length === 0) {
         state.all_cid_details = [action.payload, ...state.all_cid_details];
       }
       // In Else case object will be already in the state
@@ -69,8 +75,21 @@ export const productSlice = createSlice({
       );
     },
     setProductToStore(state, action: PayloadAction<any>) {
-      state.product_to_store = action.payload
-    }
+      state.product_to_store = action.payload;
+    },
+    addToAllCids(
+      state,
+      action: PayloadAction<{ cid: string; product_details: Product_Storage }>
+    ) {
+      let newState = {
+        ...state,
+      };
+      if (state.allCids[action.payload.cid] === undefined) {
+        newState.allCids[action.payload.cid] = action.payload.product_details;
+      }
+
+      return newState;
+    },
   },
 });
 
@@ -84,7 +103,8 @@ export const {
   removeOneUserProduct,
   addOneCidUserDetails,
   removeOneCidUserDetails,
-  addOneCidAllUserDetails
+  addOneCidAllUserDetails,
+  addToAllCids
 } = productSlice.actions;
 
 export default productSlice.reducer;

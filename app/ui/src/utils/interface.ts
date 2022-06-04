@@ -1,8 +1,6 @@
-
 //@ts-ignore
 import { CIDString } from "web3.storage";
 
- 
 export interface Store {
   id: String;
   address: String;
@@ -71,7 +69,6 @@ export interface Order_Specification {
   // orderId: String;
 }
 
-
 export enum Status {
   PENDING,
   INTRANSIT,
@@ -98,4 +95,20 @@ export interface Order {
     amount: string;
     line_items: Array<LineItem>;
   };
+}
+
+export interface Rating {
+  buyer: string;
+  cid: string | null;
+  rate: number;
+  status: "UNRATED" | "RATED";
+}
+
+export interface Rating_Storage {
+  buyer_id: string;
+  seller_id: string;
+  product_id: string;
+  body: string;
+  image?: Array<string>;
+  videos?: Array<string>;
 }

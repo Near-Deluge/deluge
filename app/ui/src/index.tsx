@@ -8,6 +8,7 @@ import { HashRouter } from "react-router-dom";
 import { store } from "./redux/store";
 import { Provider } from "react-redux";
 import { SnackbarProvider } from "notistack";
+import { createRoot } from "react-dom/client";
 import "@fontsource/sora";
 import "./index.css";
 
@@ -174,7 +175,9 @@ initializeContract().then(
     rating_contract,
     keyStore,
   }) => {
-    ReactDOM.render(
+    const container = document.getElementById("root") || document.createElement("div");
+    const root = createRoot(container);
+    root.render(
       <Provider store={store}>
         <HashRouter>
           <ThemeProvider theme={theme}>
@@ -212,8 +215,7 @@ initializeContract().then(
             </KeyStoreContext.Provider>
           </ThemeProvider>
         </HashRouter>
-      </Provider>,
-      document.querySelector("#root")
+      </Provider>
     );
   }
 );

@@ -25,7 +25,7 @@ const Home = () => {
 
   let allStores = useSelector((state: any) => state.storeSlice.allStore);
 
-  const getProductBCFromPid = (pid: string) => {
+  const getProductBCFromPid = (pid: string): null | Product => {
     let res = allProductsBC.filter((item: Product) => item.pid === pid);
     if (res.length > 0) {
       return res[0];
@@ -38,11 +38,11 @@ const Home = () => {
     let fRes = "";
     allStores.map((store: Store) => {
       let res = store.products.filter((ipid) => ipid === pid);
-      if(res.length > 0) {
-        fRes = store.id.toString()
+      if (res.length > 0) {
+        fRes = store.id.toString();
       }
     });
-    return fRes
+    return fRes;
   };
 
   return (
@@ -86,19 +86,21 @@ const Home = () => {
         {allProductsCids.map((prod: Product_Storage, index: number) => {
           let prodBC = getProductBCFromPid(prod.product_id.toString());
           return (
-            <ProductCard
-              itemId={`${prod.name}${index}`}
-              key={`${prod.name}${index}`}
-              img={prod.images[0]}
-              seller={getSellerFromProductId(prod.product_id.toString())}
-              description={prod.description.toString()}
-              name={prod.name.toString()}
-              price={prodBC.price}
-              currency={"DLGT"}
-              productBC={prodBC}
-              // rating={prod.rating}
-              // ratings_count={prod.ratings_count}
-            />
+            prodBC && (
+              <ProductCard
+                itemId={`${prod.name}${index}`}
+                key={`${prod.name}${index}`}
+                img={prod.images[0]}
+                seller={getSellerFromProductId(prod.product_id.toString())}
+                description={prod.description.toString()}
+                name={prod.name.toString()}
+                price={prodBC.price}
+                currency={"DLGT"}
+                productBC={prodBC}
+                // rating={prod.rating}
+                // ratings_count={prod.ratings_count}
+              />
+            )
           );
         })}
       </Grid>
