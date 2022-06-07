@@ -26,10 +26,16 @@ export const storeSlice = createSlice({
   initialState,
   reducers: {
     setStore(state, action: PayloadAction<Store>) {
-      state.currentStore = action.payload;
+      return {
+        ...state,
+        currentStore: action.payload,
+      };
     },
     setAllStores(state, action: PayloadAction<Array<Store>>) {
-      state.allStore = [...action.payload];
+      return {
+        ...state,
+        allStore: [...action.payload],
+      };
     },
     setField(
       state,

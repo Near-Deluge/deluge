@@ -37,14 +37,17 @@ if (calledFromDir.match("testnet_script")) {
   // Delete Sub-Accounts for Sanitary States
   let del_rat_res = deleteSubAccount("rating", accs.master);
   let del_usdt_res = deleteSubAccount("dlgt", accs.master);
+  let del_cust_res = deleteSubAccount("customer", accs.master);
 
   // Create Sub-Accounts
   let rat_res = createSubAccount("rating", accs.master);
   let usdt_res = createSubAccount("dlgt", accs.master);
+  let cust_res = createSubAccount("customer", accs.master);
 
   // Send Some Near to Sub Accounts : By default CLI Sends 100 Near, This is just as Insurance.
   transferFundsSubAccount("rating", accs.master, 10);
   transferFundsSubAccount("dlgt", accs.master, 10);
+  transferFundsSubAccount("customer", accs.master, 10);
 
   // Delploy Contracts
   let ft_deploy = sh.exec(`near deploy ${accs.dlgt} ${ft_wasm}`);
@@ -98,15 +101,20 @@ if (calledFromDir.match("testnet_script")) {
 
   console.log("===========================");
   console.log("Distributing USDT Tokens");
-  distribute_tokens(accs.dlgt, accs.marketplace, "prix.testnet");
+  distribute_tokens(accs.dlgt, accs.marketplace, "prix.testnet", "customer.deluge.testnet");
+
+  list_products();
 
 }
 
-function distribute_tokens(usdtAccount, marketplaceAccount, customerAccount) {
+function distribute_tokens(usdtAccount, marketplaceAccount, customerAccount, shopCustomer) {
   console.log("==============================");
   console.log("Doing Storage deposits!");
   sh.exec(
     `near call ${usdtAccount} storage_deposit '' --accountId ${customerAccount} --amount 0.00125`
+  );
+  sh.exec(
+    `near call ${usdtAccount} storage_deposit '' --accountId ${shopCustomer} --amount 0.00125`
   );
   sh.exec(
     `near call ${usdtAccount} storage_deposit '' --accountId ${marketplaceAccount} --amount 0.00125`
@@ -117,7 +125,16 @@ function distribute_tokens(usdtAccount, marketplaceAccount, customerAccount) {
   sh.exec(
     `near call ${usdtAccount} ft_transfer '{"receiver_id": "${customerAccount}", "amount": "50000000000"}' --accountId ${usdtAccount} --amount 0.000000000000000000000001`
   );
+
+  sh.exec(
+    `near call ${usdtAccount} ft_transfer '{"receiver_id": "${shopCustomer}", "amount": "50000000000"}' --accountId ${usdtAccount} --amount 0.000000000000000000000001`
+  );
   sh.exec(
     `near call ${usdtAccount} ft_transfer '{"receiver_id": "${marketplaceAccount}", "amount": "500000000000"}' --accountId ${usdtAccount} --amount 0.000000000000000000000001`
   );
+}
+
+function list_products() {
+  console.log("===================================");
+  console.log("Deploying Products");
 }

@@ -393,7 +393,7 @@ const Navbar: React.FC<INavbar> = ({
             </Link>
           ) : (
             [
-              <Link to={"/store"}>
+              <Link to={"/store"} key="store">
                 <MenuItem>
                   <ListItemIcon>
                     <AddBusinessIcon color="primary" />
@@ -401,18 +401,22 @@ const Navbar: React.FC<INavbar> = ({
                   View Store
                 </MenuItem>
               </Link>,
-              <MenuItem>
-                <ListItemIcon>
-                  <QueryStatsIcon color="primary" />
-                </ListItemIcon>
-                Store Stats
-              </MenuItem>,
-              <MenuItem>
-                <ListItemIcon>
-                  <ShoppingCartCheckoutIcon color="primary" />
-                </ListItemIcon>
-                Pending Orders
-              </MenuItem>,
+              <Link to="/store_stats" key="store_stat">
+                <MenuItem>
+                  <ListItemIcon>
+                    <QueryStatsIcon color="primary" />
+                  </ListItemIcon>
+                  Store Stats
+                </MenuItem>
+              </Link>,
+              <Link to="store_pending" key="store_pending">
+                <MenuItem>
+                  <ListItemIcon>
+                    <ShoppingCartCheckoutIcon color="primary" />
+                  </ListItemIcon>
+                  Pending Orders
+                </MenuItem>
+              </Link>,
             ]
           )}
           {wallet.isSignedIn() ? (

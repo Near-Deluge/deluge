@@ -91,7 +91,7 @@ const Store: React.FC<IStore> = ({}) => {
       )}
       <Grid container padding={"10px 0px"}>
         {!isAddProductOpen ? (
-          <Tooltip title="Open Add New Product">
+          <Tooltip title="Open Add New Product" >
             <Button
               onClick={() => {
                 setAddProductOpen(true);
@@ -113,7 +113,7 @@ const Store: React.FC<IStore> = ({}) => {
             </IconButton>
           </Tooltip>
         )}
-        <Collapse in={isAddProductOpen}>
+        <Collapse in={isAddProductOpen} >
           <AddProduct />
         </Collapse>
       </Grid>

@@ -9,6 +9,7 @@ import {
   ImageListItem,
   Grid,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import React, { useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -34,6 +35,9 @@ import { ArrowLeft, Close, ShoppingBag } from "@mui/icons-material";
 import { BaseContractContext } from "../index";
 import { addItem, removeItem } from "../redux/slices/cart.slice";
 import { useSnackbar } from "notistack";
+import Ratings from "../components/ratings";
+import useIsAUserProduct from "../hooks/useIsAUserProduct";
+import useGetOrFetchProductCid from "../hooks/useGetOrFetchProductCid";
 
 export const initProductBC: IProduct = {
   pid: "",
@@ -83,6 +87,18 @@ const Product = () => {
   const [isItemInCart, setIsItemInCart] = React.useState(false);
   const cartItems = useSelector((state: any) => state.cartSlice.items);
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
+
+  const getShopIdFromProductID = (productId: string) => {
+    let fStoreId = undefined;
+    allStore &&
+      allStore.forEach((store: Store) => {
+        let res = store.products.filter((ipid) => ipid === productId);
+        if (res.length > 0) {
+          fStoreId = store.id;
+        }
+      });
+    return fStoreId;
+  };
 
   const handleAddCartProduct = (item: IProduct) => {
     allStore.map((store: Store) => {
@@ -203,6 +219,8 @@ const Product = () => {
     }
   }, [userCidDetails]);
 
+
+
   const handleDeleteProduct = async () => {
     console.log(base_contract);
     try {
@@ -232,17 +250,22 @@ const Product = () => {
 
   return (
     <Paper sx={{ padding: "20px" }}>
-      <IconButton
-        onClick={() => {
-          navigation(-1);
-        }}
-      >
-        <ArrowLeft />
-      </IconButton>
-      <Typography variant="h3" gutterBottom>
+      <Box display={"flex"}>
+        <IconButton
+          onClick={() => {
+            navigation(-1);
+          }}
+          sx={{
+            marginRight: "20px",
+          }}
+        >
+          <ArrowLeft />
+        </IconButton>
+      </Box>
+      <Typography variant="h3" gutterBottom textAlign={"center"}>
         {currentProduct.name}
       </Typography>
-      <Typography>{currentProduct.description}</Typography>
+      <Typography textAlign={"center"}>{currentProduct.description}</Typography>
       <Grid container>
         <Grid item xs={12} sm={6} padding="10px">
           <Paper>
@@ -377,6 +400,21 @@ const Product = () => {
             </Box>
           )}
         </Grid>
+      </Grid>
+      <Grid container>
+        <Grid item xs={12} margin="10px 0px ">
+          <Typography textAlign={"center"} variant="h5" fontWeight={"bold"}>
+            Product Reviews
+          </Typography>
+        </Grid>
+        {currentProductBC.pid.length > 0 ? (
+          <Ratings
+            productId={currentProductBC.pid}
+            shopId={getShopIdFromProductID(currentProductBC.pid) || ""}
+          />
+        ) : (
+          <CircularProgress />
+        )}
       </Grid>
     </Paper>
   );

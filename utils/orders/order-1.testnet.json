@@ -1,0 +1,24 @@
+{
+    "id": "order-1",
+    "customer_account_id": "customer.deluge.testnet",
+    "seller_id": "prix.testnet",
+    "status": "PENDING",
+    "cid": "bafybeif3qxz55kpg3knim7np7lypbihxpo5m3wo6ampyoyuyqftcr4xu7m",
+    "customer_secret": "888b19a43b151683c87895f6211d9f8640f97bdc8ef32f03dbe057c8f5e56d32", 
+    "payload": {
+        "amount": "9660000000",
+        "line_items": [
+            {
+                "count": 1,
+                "product_id": "SKU-0450456",
+                "price": "7420000000"
+            },
+            {
+                "count": 1,
+                "product_id": "SKU-030303",
+                "price": "2240000000"
+            }
+        ]
+    }
+}
+
