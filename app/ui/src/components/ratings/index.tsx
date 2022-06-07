@@ -6,6 +6,7 @@ import useGetAllStores from "../../hooks/useGetAllStores";
 import { addRatings, StoreRating } from "../../redux/slices/ratings.slice";
 import { Rating } from "../../utils/interface";
 import CastRating from "./castRating";
+import RatingView from "./ratingView";
 
 type IRating = {
   productId: string;
@@ -15,9 +16,8 @@ type IRating = {
 const Ratings: React.FC<IRating> = ({ productId, shopId }) => {
   const ratingContract = useContext(RatingContractContext);
 
-  // Get All Stores 
+  // Get All Stores
   useGetAllStores();
-  
 
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
   const dispatcher = useDispatch();
@@ -65,7 +65,7 @@ const Ratings: React.FC<IRating> = ({ productId, shopId }) => {
     });
     if (productRatings.length > 0) {
       let userId = walletConnection?.getAccountId();
-      
+
       pendingUserRatings = [
         ...productRatings[0].ratings.filter(
           (pRating: Rating) =>
@@ -83,9 +83,17 @@ const Ratings: React.FC<IRating> = ({ productId, shopId }) => {
   }, [allRatings]);
 
   return (
-    <Grid item>
+    <Grid container>
       {productRatings.map((pRating) => {
-        return <p key={pRating.cid}>{JSON.stringify(pRating)}</p>;
+        return (
+          <RatingView
+            key={pRating.cid}
+            buyer={pRating.buyer}
+            cid={pRating.cid}
+            rate={pRating.rate}
+            status={pRating.status}
+          />
+        );
       })}
       <Divider sx={{ margin: "20px 0px " }} />
       {userPendingRating.map((pRating, index) => {
