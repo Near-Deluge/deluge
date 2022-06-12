@@ -20,6 +20,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { addItem, removeItem } from "../../redux/slices/cart.slice";
 
 import { useSnackbar } from "notistack";
+import useProductIsInCart from "../../hooks/useProductIsInCart";
 
 type IProductCard = {
   img: string;
@@ -57,19 +58,9 @@ const ProductCard: React.FC<IProductCard> = ({
 
   const navigate = useNavigate();
 
-  const [isItemInCart, setIsItemInCart] = React.useState(false);
-  const cartItems = useSelector((state: any) => state.cartSlice.items);
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
 
-  React.useEffect(() => {
-    let res = cartItems.filter((item: Product) => item.pid === productBC.pid);
-
-    if (res.length > 0) {
-      setIsItemInCart(true);
-    } else {
-      setIsItemInCart(false);
-    }
-  });
+  const { isInCart, orderId } = useProductIsInCart(productBC.pid, seller);
 
   const handleAddCartProduct = (item: Product) => {
     allStore.map((store: Store) => {
@@ -77,17 +68,28 @@ const ProductCard: React.FC<IProductCard> = ({
       if (res.length > 0) {
         dispatcher(addItem({ product: item, store: store, qty: 1 }));
         enqueueSnackbar(`Product ${item.name} Added to Cart.`, {
-          variant: "success"
-        })
+          variant: "success",
+        });
       }
     });
   };
 
   const handleRemoveItem = (pid: string) => {
-    dispatcher(removeItem(pid));
-    enqueueSnackbar(`Successfully Removed Item from Cart.`, {
-      variant: "success"
-    })
+    if (isInCart && orderId.length > 0) {
+      dispatcher(
+        removeItem({
+          orderId: orderId,
+          productId: productBC.pid,
+        })
+      );
+      enqueueSnackbar(`Successfully Removed Item from Cart.`, {
+        variant: "success",
+      });
+    } else {
+      enqueueSnackbar(`Some Error Occured !`, {
+        variant: "error",
+      });
+    }
   };
 
   const return_stars = (rating?: number) => {
@@ -111,7 +113,10 @@ const ProductCard: React.FC<IProductCard> = ({
       className={`main-container ${orientation || "vertical"}`}
       sx={{ minWidth: "300px" }}
     >
-      <div className="image-wrapper" onClick={() => navigate(`/products/${productBC.cid}`)}>
+      <div
+        className="image-wrapper"
+        onClick={() => navigate(`/products/${productBC.cid}`)}
+      >
         <img src={img} alt={name} />
       </div>
       <div className="content-details">
@@ -142,7 +147,7 @@ const ProductCard: React.FC<IProductCard> = ({
             label={`${change_stable_to_human(price)} ${currency}`}
             color="primary"
           />
-          {isItemInCart ? (
+          {isInCart ? (
             <Button
               variant="contained"
               color="error"

@@ -408,7 +408,10 @@ const Account = () => {
 
             {customerOrder.map((order: any, index: number) => {
               return (
-                <Paper sx={{ padding: "10px" }} key={order.cid}>
+                <Paper
+                  sx={{ padding: "10px", margin: "10px 0px" }}
+                  key={order.cid}
+                >
                   <Typography
                     color={"primary"}
                     textAlign="center"
@@ -480,17 +483,24 @@ const Account = () => {
             })}
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} sx={{ paddingLeft: "5px" }} >
+        <Grid item xs={12} sm={6} sx={{ paddingLeft: "5px" }}>
           <Paper sx={{ padding: "10px" }}>
             <Typography textAlign={"center"} variant="h5" fontWeight={"bold"}>
               Shop Orders
             </Typography>
-            {shopOrder.length > 0 && (
+            {shopOrder.length > 0 ? (
               <Typography fontWeight={"bold"}>Ongoing Orders</Typography>
+            ) : (
+              <Typography fontWeight={"bold"}>
+                No Ongoing Shop Orders.
+              </Typography>
             )}
             {shopOrder.map((order: any, index: number) => {
               return (
-                <Paper sx={{ padding: "10px" }}>
+                <Paper
+                  sx={{ padding: "10px", margin: "10px 0px" }}
+                  key={order.id}
+                >
                   <Typography>Order ID: {order.id}</Typography>
                   <Typography
                     color={"primary"}

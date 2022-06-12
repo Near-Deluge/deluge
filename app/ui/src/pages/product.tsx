@@ -38,6 +38,7 @@ import { useSnackbar } from "notistack";
 import Ratings from "../components/ratings";
 import useIsAUserProduct from "../hooks/useIsAUserProduct";
 import useGetOrFetchProductCid from "../hooks/useGetOrFetchProductCid";
+import useProductIsInCart from "../hooks/useProductIsInCart";
 
 export const initProductBC: IProduct = {
   pid: "",
@@ -84,17 +85,15 @@ const Product = () => {
   const base_contract = useContext(BaseContractContext);
   const walletConnection = useContext(WalletConnectionContext);
 
-  const [isItemInCart, setIsItemInCart] = React.useState(false);
-  const cartItems = useSelector((state: any) => state.cartSlice.items);
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
 
-  const getShopIdFromProductID = (productId: string) => {
-    let fStoreId = undefined;
+  const getShopIdFromProductID = (productId: string): string => {
+    let fStoreId = "";
     allStore &&
       allStore.forEach((store: Store) => {
         let res = store.products.filter((ipid) => ipid === productId);
         if (res.length > 0) {
-          fStoreId = store.id;
+          fStoreId = store.id.toString();
         }
       });
     return fStoreId;
@@ -113,25 +112,22 @@ const Product = () => {
   };
 
   const handleRemoveItem = (pid: string) => {
-    dispatcher(removeItem(pid));
-    enqueueSnackbar(`Successfully Removed Item from Cart.`, {
-      variant: "success",
-    });
-  };
-
-  // Hook to check if product is in the cart
-  // Improve this to do it each order basis
-  React.useEffect(() => {
-    let res = cartItems.filter(
-      (item: IProduct) => item.pid === currentProductBC.pid
-    );
-
-    if (res.length > 0) {
-      setIsItemInCart(true);
+    if (isInCart && orderId.length > 0) {
+      dispatcher(
+        removeItem({
+          orderId: orderId,
+          productId: currentProductBC.pid,
+        })
+      );
+      enqueueSnackbar(`Successfully Removed Item from Cart.`, {
+        variant: "success",
+      });
     } else {
-      setIsItemInCart(false);
+      enqueueSnackbar(`Some Error Occured !`, {
+        variant: "error",
+      });
     }
-  });
+  };
 
   const userProducts = useSelector(
     (state: any) => state.productSlice.userProducts
@@ -219,8 +215,6 @@ const Product = () => {
     }
   }, [userCidDetails]);
 
-
-
   const handleDeleteProduct = async () => {
     console.log(base_contract);
     try {
@@ -247,6 +241,11 @@ const Product = () => {
       });
     }
   };
+
+  const { isInCart, orderId } = useProductIsInCart(
+    currentProductBC.pid,
+    getShopIdFromProductID(currentProductBC.pid)
+  );
 
   return (
     <Paper sx={{ padding: "20px" }}>
@@ -362,7 +361,7 @@ const Product = () => {
             })}
           </Box>
           <Box sx={{ margin: "10px 0px" }}>
-            {isItemInCart ? (
+            {isInCart ? (
               <Button
                 variant="contained"
                 color="error"
