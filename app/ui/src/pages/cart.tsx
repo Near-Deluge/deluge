@@ -45,8 +45,8 @@ import * as nearAPI from "near-api-js";
 // @ts-ignore
 import Jdenticon from "react-jdenticon";
 
-import { Link } from "react-router-dom";
-import { setQuantityItem } from "../redux/slices/cart.slice";
+import { Link, useNavigate } from "react-router-dom";
+import { removeItem, setQuantityItem } from "../redux/slices/cart.slice";
 import { Close, ShuffleOutlined } from "@mui/icons-material";
 import { KeyStore } from "near-api-js/lib/key_stores";
 import bs58 from "bs58";
@@ -222,10 +222,16 @@ export const AddressForm: React.FC<{
 
 export const CartItem: React.FC<{
   product: Product;
-}> = ({ product }) => {
+  lineItem: LineItem;
+  orderId: string;
+}> = ({ product, lineItem, orderId }) => {
   const dispatcher = useDispatch();
 
+  const navigation = useNavigate();
+
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
+
+  const {enqueueSnackbar} = useSnackbar();
 
   const getStoreFromPid = (pid: string) => {
     let res = "";
@@ -237,6 +243,19 @@ export const CartItem: React.FC<{
     }
   };
 
+  const handleRemoveItem = () => {
+    
+    dispatcher(removeItem({
+      orderId: orderId,
+      productId: lineItem.product_id
+    }));
+
+    enqueueSnackbar(`Removed Product :${lineItem.product_id} from OrderID: ${orderId}`,{
+      variant: "info"
+    })
+  
+  }
+
   return (
     <Paper sx={{ maxWidth: "500px", padding: "10px", margin: "10px" }}>
       <Grid container>
@@ -247,7 +266,7 @@ export const CartItem: React.FC<{
           <Typography color={"primary"} variant="h5">
             {product.name}
           </Typography>
-          <Typography variant="caption" gutterBottom>
+          <Typography variant="caption" gutterBottom fontWeight={"bold"}>
             {product.pid}
           </Typography>
           <Typography>
@@ -262,7 +281,7 @@ export const CartItem: React.FC<{
             select
             id="quantity"
             label="Qty"
-            defaultValue={1}
+            value={lineItem.count}
             variant="filled"
             onChange={(e) => {
               console.log(e.target.value);
@@ -278,7 +297,7 @@ export const CartItem: React.FC<{
           >
             {new Array(10).fill(0).map((_, index) => {
               return (
-                <MenuItem key={index} value={index + 1}>
+                <MenuItem key={product.cid + index} value={index + 1}>
                   {index + 1}
                 </MenuItem>
               );
@@ -292,10 +311,12 @@ export const CartItem: React.FC<{
           justifyContent={"space-evenly"}
           margin={"10px 0px"}
         >
-          <Button variant="contained" color="error">
+          <Button variant="contained" color="error" onClick={handleRemoveItem}>
             Remove from Cart
           </Button>
-          <Button variant="contained" color="info">
+          <Button variant="contained" color="info" onClick={() => {
+            navigation(`/products/${product.cid}`, {replace: false});
+          }}>
             View More Information
           </Button>
         </Grid>
@@ -311,7 +332,6 @@ const Cart = () => {
   const walletConnection = useContext(WalletConnectionContext);
 
   const cartOrders = useSelector((state: any) => state.cartSlice.orders);
-  const cartTotal = useSelector((state: any) => state.cartSlice.total);
   const userDetails = useSelector((state: any) => state.contractSlice.user);
   const allStores = useSelector((state: any) => state.storeSlice.allStore);
 
@@ -348,13 +368,11 @@ const Cart = () => {
 
   const [currentOrderId, setCurrentOrderId] = React.useState<string>("");
 
-
   React.useEffect(() => {
     setAddressState({
       ...addressState,
       userId: userDetails.accountId,
     });
-    
   }, [userDetails]);
 
   const [addressState, setAddressState] = React.useState<Order_Specification>({
@@ -387,9 +405,8 @@ const Cart = () => {
 
   const handleSubmitClick = async () => {
     const ipfsClient = await web3Instance;
-  
+
     if (secretInputRef !== null) {
-     
       const secret = secretInputRef.current?.value;
 
       if (secret && secret.length > 5) {
@@ -397,11 +414,10 @@ const Cart = () => {
           (order: Order) => order.id === currentOrderId
         );
         if (res.length > 0) {
-
           // Fail Fast
           if (userDetails.accountId === res[0].seller_id) {
             enqueueSnackbar("You can't buy from your own store.", {
-              variant: "error"
+              variant: "error",
             });
             return;
           }
@@ -497,7 +513,7 @@ const Cart = () => {
           handleClose={handleClose}
         />
       </Modal>
-      {parseFloat(cartTotal) <= 0 ? (
+      {cartOrders.length <= 0 ? (
         <Typography>
           Looks like cart is Empty. Try adding something from{" "}
           <Link to="/">
@@ -515,16 +531,16 @@ const Cart = () => {
             justifyContent={"center"}
           >
             {cartOrders.length > 0 &&
-              cartOrders.map((order: Order) => {
+              cartOrders.map((order: Order, index: number) => {
                 return (
-                  <Paper sx={{ padding: "10px" }}>
+                  <Paper sx={{ padding: "10px" }} key={order.seller_id + index}>
                     <Typography textAlign={"center"}>
                       Seller ID: {order.seller_id}
                     </Typography>
                     {order.payload.line_items.map(
                       (item: LineItem, index: React.Key | null | undefined) => {
                         let prod = getProductBCFromPid(item.product_id);
-                        return <CartItem key={index} product={prod} />;
+                        return <CartItem key={item.product_id + index} product={prod} lineItem={item} orderId={order.id}/>;
                       }
                     )}
                     <Box

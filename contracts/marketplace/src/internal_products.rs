@@ -14,12 +14,20 @@ impl DelugeBase {
         );
 
         let pkey = format!("{}:{}", store_id, product.pid);
+
+        // Check if product already exists in storage
+        match self.products.get(&pkey) {
+            Some(x) => {
+                log!("Product already exists!! Product ID: {}", x.pid);
+                assert!(false, "Product Already Exists!!!")
+            }
+            None => {}
+        }
+
         store.products.push(product.pid.clone());
 
         // TODO: Check if enough NEAR is present in storage costs.
         self.check_storage_product(product.clone());
-
-        // TODO: Check if product already exists in the store.
 
         // Update the persistent store
         self.products.insert(&pkey, &product);

@@ -7,7 +7,10 @@ use near_sdk::env::STORAGE_PRICE_PER_BYTE;
 use near_sdk::json_types::{Base58CryptoHash, U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde_json::{self, json};
-use near_sdk::{env, log, near_bindgen, setup_alloc, AccountId, Balance, CryptoHash, Gas, Promise, PanicOnDefault};
+use near_sdk::{
+    env, log, near_bindgen, setup_alloc, AccountId, Balance, CryptoHash, Gas, PanicOnDefault,
+    Promise,
+};
 
 use crate::models::*;
 use crate::utils::*;
@@ -51,9 +54,8 @@ pub struct DelugeBase {
 
 #[near_bindgen]
 impl DelugeBase {
-
     #[init]
-    pub fn new() -> Self{
+    pub fn new() -> Self {
         let mut contract = Self {
             orders: UnorderedMap::new(StorageKey::Orders),
             stores: UnorderedMap::new(StorageKey::Stores),
@@ -69,9 +71,8 @@ impl DelugeBase {
         contract
     }
 
-    // Interna Function to store the NFT Contract data Initially    
+    // Interna Function to store the NFT Contract data Initially
     fn internal_store_initial_contract(&mut self) {
-        
         assert_eq!(env::predecessor_account_id(), env::current_account_id());
         let code = NFT_CONTRACT_INITIAL_CODE.to_vec();
         let sha256_hash = env::sha256(&code);
@@ -118,7 +119,7 @@ impl DelugeBase {
         assert_eq!(env::predecessor_account_id(), env::current_account_id());
 
         assert_one_yocto();
-        
+
         let raw_code = env::input().expect("NO INPUT ATTACHED");
         log!("Recieved code as : {:?}", raw_code);
 
@@ -208,7 +209,7 @@ impl DelugeBase {
         account_id: AccountId,
         attached_deposit: U128,
         predecessor_account_id: AccountId,
-        store: Store
+        store: Store,
     ) -> bool {
         if near_sdk::is_promise_success() {
             self.nfts.insert(&account_id);
@@ -246,6 +247,7 @@ impl DelugeBase {
             .as_bytes(),
         );
         let mut order: Order = near_sdk::serde_json::from_str(&msg).unwrap();
+
         env::log(format!("ft_on_transfer: order.id {}", order.id.to_string()).as_bytes());
 
         // Reappending status as PENDING as anyone can set it to different flag
@@ -280,12 +282,19 @@ impl DelugeBase {
 
             // Implicitly casting the price to u128
             let price: u128 = prod.price.into();
-            l_total += price;
+
+            // TODO: Multiply with the product quantity here
+            let line_item_price: u128 = line_item.count.into();
+            let total_item_price: u128 = price.checked_mul(line_item_price).unwrap();
+
+            l_total += total_item_price;
         }
 
         assert!(
             parsed_amount == l_total,
-            "Paid amount in Coins does not matches with actual sum of prices on product listing."
+            "Paid amount in Coins does not matches with actual sum of prices on product listing. Paid: {}. Local Total: {}",  
+            parsed_amount, 
+            l_total
         );
 
         // TODO: validate msg deserializes to an Order struct
