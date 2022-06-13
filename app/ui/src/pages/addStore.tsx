@@ -18,6 +18,10 @@ import { setUser, User } from "../redux/slices/contract.slice";
 import { useSnackbar } from "notistack";
 import { change_near_to_human } from "../utils/utils";
 import { ATTACHED_GAS } from "./cart";
+import useLocalStorageKey, {
+  generateKeyPair,
+  ILocalStorageKey,
+} from "../hooks/useLocalStorageKey";
 
 type IAddStore = {
   base_contract: any;
@@ -37,6 +41,7 @@ const AddStore: React.FC<IAddStore> = ({ base_contract, wallet }) => {
   const [local, setLocal] = React.useState({
     storage_deposit: 0,
   });
+
 
   React.useEffect(() => {
     if (user.store) {

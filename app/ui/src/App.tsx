@@ -39,6 +39,7 @@ import Cart from "./pages/cart";
 
 import CompleteOrder from "./pages/completeOrder";
 import NotFound404 from "./pages/404";
+import RecoverShopSeedPhrases from "./pages/recoverShopSeedPhrases";
 
 // TODO: Fix this to concrete types from any
 type IApp = {
@@ -199,6 +200,7 @@ export default function App({
           <Route path="/account" element={<Account />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/complete_order" element={<CompleteOrder />} />
+          <Route path="/recover_shop_seeds" element={<RecoverShopSeedPhrases />} />
           <Route path="*" element={<NotFound404 />} />
         </Routes>
       </Container>

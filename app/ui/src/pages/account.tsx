@@ -41,6 +41,9 @@ import { ecDecrypt } from "deluge-helper";
 import DelugeIcon from "../icons/deluge";
 import { AccountBox, AddCircle } from "@mui/icons-material";
 import { PaddedDividerSpacer } from "./product";
+import useLocalStorageKey from "../hooks/useLocalStorageKey";
+import { useSnackbar } from "notistack";
+import { useNavigate } from "react-router-dom";
 
 export const parseStatusToUi = (status: string) => {
   switch (status) {
@@ -63,8 +66,9 @@ const Account = () => {
   const walletConnection = useContext(WalletConnectionContext);
   const web3Instance = useContext(WebContext);
   const userDetails = useSelector((state: any) => state.contractSlice.user);
-  const [keyP, setKeyP] = React.useState<any>();
-  const keyC = useContext(KeyStoreContext);
+
+  const { enqueueSnackbar } = useSnackbar();
+  const navigation = useNavigate();
 
   const [contract_details, setContractDetails] = React.useState<{
     stable_balance: any;
@@ -98,12 +102,6 @@ const Account = () => {
 
         setShopOrders([...storeOrder]);
 
-        setKeyP(
-          await keyC?.getKey(
-            walletConnection?._networkId || "testnet",
-            await walletConnection?.getAccountId()
-          )
-        );
       }
     })();
   }, [userDetails]);
@@ -235,6 +233,7 @@ const Account = () => {
   };
 
   const [decryptedShopOrder, setDecryptedShopOrder] = React.useState<any>({});
+  const [localKeyPair] = useLocalStorageKey();
 
   const getDecryptedAddress = (cid: CIDString) => {
     (async () => {
@@ -249,8 +248,9 @@ const Account = () => {
           const files = await res.files();
           const content = await files[0].text();
 
-          if (keyP && keyP !== null) {
-            const userPrivateKey = bs58.decode(keyP.secretKey);
+          if (localKeyPair.secretKey && localKeyPair.secretKey.length > 0) {
+            
+            const userPrivateKey = bs58.decode(localKeyPair.secretKey.split("ed25519:")[1]);
 
             let dataObj = JSON.parse(content);
 
@@ -270,6 +270,9 @@ const Account = () => {
               ...decryptedShopOrder,
               [cid]: decryptedAddress,
             });
+          } else {
+            enqueueSnackbar("Import Your Shop SeedPhrases!!");
+            navigation("/recover_shop_seeds", {replace: true});
           }
         }
       }
