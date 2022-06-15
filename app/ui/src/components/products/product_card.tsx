@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import { Paper, Typography, Chip, Button, IconButton } from "@mui/material";
 
@@ -21,6 +21,9 @@ import { addItem, removeItem } from "../../redux/slices/cart.slice";
 
 import { useSnackbar } from "notistack";
 import useProductIsInCart from "../../hooks/useProductIsInCart";
+
+import isIPFS from "is-ipfs";
+import { StorageContext } from "../..";
 
 type IProductCard = {
   img: string;
@@ -107,6 +110,23 @@ const ProductCard: React.FC<IProductCard> = ({
     return ret_c;
   };
 
+  const storageContext = useContext(StorageContext);
+
+  const [lImg, setLImg] = useState(img);
+
+  useEffect(() => {
+    (async () => {
+      if (isIPFS.cid(lImg)) {
+        // It is cid so fetch file
+        const value = await storageContext.getFirstFile(lImg);
+        if (value) {
+          let ObjLink = URL.createObjectURL(value);
+          setLImg(ObjLink);
+        }
+      }
+    })();
+  }, []);
+
   return (
     <Paper
       elevation={elevation || 1}
@@ -117,7 +137,7 @@ const ProductCard: React.FC<IProductCard> = ({
         className="image-wrapper"
         onClick={() => navigate(`/products/${productBC.cid}`)}
       >
-        <img src={img} alt={name} />
+        <img src={lImg} alt={name} />
       </div>
       <div className="content-details">
         <div className="product-head">

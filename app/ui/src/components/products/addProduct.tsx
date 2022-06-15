@@ -1,10 +1,11 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useSelector } from "react-redux";
 
 import { Product_Storage, Product } from "../../utils/interface";
 
 import {
   BaseContractContext,
+  StorageContext,
   WalletConnectionContext,
   WebContext,
 } from "../../index";
@@ -19,10 +20,13 @@ import {
   Chip,
   InputAdornment,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import { Box } from "@mui/system";
 import BN from "big.js";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import { useSnackbar } from "notistack";
+import { Filelike } from "web3.storage/dist/src/lib/interface";
 
 export const length_unit = [
   { value: "metere", symbol: "M" },
@@ -87,8 +91,12 @@ const AddProduct = () => {
   // Since Add Product is required is context of adding a new Product will keep the state local to this component
 
   const web3Instance = useContext(WebContext);
+  const storageContext = useContext(StorageContext);
   const base_contract = useContext(BaseContractContext);
   const wallet = useContext(WalletConnectionContext);
+
+  const [loading, setLoading] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   //   console.log(web3Instance.then((res) => console.log(res)));
 
@@ -117,7 +125,7 @@ const AddProduct = () => {
       [e.target.name]: e.target.value,
     });
   };
-  
+
   const handleBCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBCProductStorage({
       ...blockhain_product_storage,
@@ -196,6 +204,8 @@ const AddProduct = () => {
   const handleSubmit = async () => {
     // Send to IPFS to get CID
     console.log(storage_product);
+    //  TODO: Form Validation
+    setLoading(true);
     try {
       let file = new File([JSON.stringify(storage_product)], "deluge.txt");
       let instance = await web3Instance;
@@ -227,9 +237,13 @@ const AddProduct = () => {
         amount: "1",
         meta: "create_product",
       });
+      setLoading(false);
+
     } catch (e) {
       console.log(e);
-      alert(e);
+      enqueueSnackbar("Some Error Occured!!!", {variant: "error"});
+      setLoading(false);
+
       return;
     }
   };
@@ -245,6 +259,66 @@ const AddProduct = () => {
         },
       },
     });
+  };
+
+  const [flags, setFlags] = React.useState({
+    imagesLoading: false,
+    videosLoading: false,
+  });
+
+  const handleFileUploads = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+    if (e.target.files && e.target.files.length > 0) {
+      if (e.target.name === "images") {
+        let files = e.target.files;
+        setFlags({
+          ...flags,
+          imagesLoading: true,
+        });
+        console.log(files.length);
+        for(let i = 0; i < files.length; ++i) {
+          const cid = await storageContext.putFile(files[i]);
+          if (cid && cid.length > 0) {
+            handleImageAdd(cid);
+          } else {
+            enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+              variant: "error",
+            });
+          }
+        }
+        
+        setFlags({
+          ...flags,
+          imagesLoading: false,
+        });
+      }
+      if (e.target.name === "videos") {
+        
+        let files = e.target.files;
+        setFlags({
+          ...flags,
+          videosLoading: true,
+        });
+
+        for(let i = 0; i < files.length; ++i) {
+          const cid = await storageContext.putFile(files[i]);
+          if (cid && cid.length > 0) {
+            handleVideoAdd(cid);
+          } else {
+            enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+              variant: "error",
+            });
+          }
+        }
+        
+        setFlags({
+          ...flags,
+          videosLoading: false,
+        });
+      }
+    } else {
+      enqueueSnackbar("Please Select Atleast one File...");
+    }
   };
 
   return (
@@ -525,7 +599,7 @@ const AddProduct = () => {
           );
         })}
       </Box>
-      <Box display={"flex"} alignItems="center">
+      <Box display={"flex"} alignItems="flex-start" flexDirection={"column"}>
         <TextField
           name="image"
           label="Add Image"
@@ -543,7 +617,17 @@ const AddProduct = () => {
             }
           }}
         />
+        <TextField
+          variant="outlined"
+          placeholder="Click to Add Files"
+          type={"file"}
+          onChange={handleFileUploads}
+          name="images"
+          helperText="Select Product Images"
+          disabled={flags.imagesLoading}
+        />
         <Button
+          disabled={flags.imagesLoading}
           onClick={() => {
             if (null !== imagesIPRef.current) {
               handleImageAdd(imagesIPRef.current.value);
@@ -551,7 +635,7 @@ const AddProduct = () => {
             }
           }}
         >
-          Add Image
+          {flags.imagesLoading ? <CircularProgress /> : "Add Image"}
         </Button>
       </Box>
       <Divider sx={{ margin: "20px 0px" }} />
@@ -568,7 +652,7 @@ const AddProduct = () => {
           );
         })}
       </Box>
-      <Box display={"flex"} alignItems="center">
+      <Box display={"flex"} alignItems="flex-start" flexDirection={"column"}>
         <TextField
           name="videos"
           label="Add Video"
@@ -586,7 +670,17 @@ const AddProduct = () => {
             }
           }}
         />
+        <TextField
+          variant="outlined"
+          placeholder="Click to Add Videos"
+          type={"file"}
+          onChange={handleFileUploads}
+          name="videos"
+          helperText="Select Product Videos"
+          disabled={flags.videosLoading}
+        />
         <Button
+          disabled={flags.videosLoading}
           onClick={() => {
             if (null !== videosIPRef.current) {
               handleVideoAdd(videosIPRef.current.value);
@@ -594,7 +688,7 @@ const AddProduct = () => {
             }
           }}
         >
-          Add Video
+          {flags.videosLoading ? <CircularProgress /> : "Add Video"}
         </Button>
       </Box>
       <Divider sx={{ margin: "20px 0px" }} />
@@ -683,9 +777,11 @@ const AddProduct = () => {
         }}
       />
       <Divider sx={{ margin: "20px 0px" }} />
-      <Button variant="contained" onClick={handleSubmit}>
-        {" "}
-        Create Product
+      <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+        {
+          loading ? <CircularProgress /> : " Create Product"
+        }
+       
       </Button>
     </Paper>
   );

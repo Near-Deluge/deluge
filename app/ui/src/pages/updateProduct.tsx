@@ -2,7 +2,12 @@ import React, { useContext, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { CIDString } from "web3.storage/dist/src/lib/interface";
-import { BaseContractContext, WalletConnectionContext, WebContext } from "..";
+import {
+  BaseContractContext,
+  StorageContext,
+  WalletConnectionContext,
+  WebContext,
+} from "..";
 import {
   initProductStorage,
   length_unit,
@@ -26,16 +31,18 @@ import {
   InputAdornment,
   MenuItem,
   CircularProgress,
-  IconButton
+  IconButton,
 } from "@mui/material";
 import { Box } from "@mui/system";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import { ArrowLeft, ArrowLeftOutlined } from "@mui/icons-material";
+import { useSnackbar } from "notistack";
 
 const UpdateProduct = () => {
   const { cid } = useParams();
   const navigation = useNavigate();
   const dispatcher = useDispatch();
+  const { enqueueSnackbar } = useSnackbar();
 
   const web3Instance = useContext(WebContext);
 
@@ -238,6 +245,66 @@ const UpdateProduct = () => {
   const imagesIPRef = useRef<HTMLInputElement>(null);
   const videosIPRef = useRef<HTMLInputElement>(null);
   const countriesIPRef = useRef<HTMLInputElement>(null);
+
+  const [flags, setFlags] = React.useState({
+    imagesLoading: false,
+    videosLoading: false,
+  });
+
+  const storageContext = useContext(StorageContext);
+
+  const handleFileUploads = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      if (e.target.name === "images") {
+        let files = e.target.files;
+        setFlags({
+          ...flags,
+          imagesLoading: true,
+        });
+        console.log(files.length);
+        for (let i = 0; i < files.length; ++i) {
+          const cid = await storageContext.putFile(files[i]);
+          if (cid && cid.length > 0) {
+            handleImageAdd(cid);
+          } else {
+            enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+              variant: "error",
+            });
+          }
+        }
+
+        setFlags({
+          ...flags,
+          imagesLoading: false,
+        });
+      }
+      if (e.target.name === "videos") {
+        let files = e.target.files;
+        setFlags({
+          ...flags,
+          videosLoading: true,
+        });
+
+        for (let i = 0; i < files.length; ++i) {
+          const cid = await storageContext.putFile(files[i]);
+          if (cid && cid.length > 0) {
+            handleVideoAdd(cid);
+          } else {
+            enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+              variant: "error",
+            });
+          }
+        }
+
+        setFlags({
+          ...flags,
+          videosLoading: false,
+        });
+      }
+    } else {
+      enqueueSnackbar("Please Select Atleast one File...");
+    }
+  };
 
   return (
     <Paper elevation={2} sx={{ margin: "10px 0px", padding: "10px" }}>
@@ -524,7 +591,7 @@ const UpdateProduct = () => {
           );
         })}
       </Box>
-      <Box display={"flex"} alignItems="center">
+      <Box display={"flex"} alignItems="flex-start" flexDirection={"column"}>
         <TextField
           name="image"
           label="Add Image"
@@ -542,7 +609,17 @@ const UpdateProduct = () => {
             }
           }}
         />
+        <TextField
+          variant="outlined"
+          placeholder="Click to Add Files"
+          type={"file"}
+          onChange={handleFileUploads}
+          name="images"
+          helperText="Select Product Images"
+          disabled={flags.imagesLoading}
+        />
         <Button
+          disabled={flags.imagesLoading}
           onClick={() => {
             if (null !== imagesIPRef.current) {
               handleImageAdd(imagesIPRef.current.value);
@@ -550,7 +627,7 @@ const UpdateProduct = () => {
             }
           }}
         >
-          Add Image
+          {flags.imagesLoading ? <CircularProgress /> : "Add Image"}
         </Button>
       </Box>
       <Divider sx={{ margin: "20px 0px" }} />
@@ -567,7 +644,7 @@ const UpdateProduct = () => {
           );
         })}
       </Box>
-      <Box display={"flex"} alignItems="center">
+      <Box display={"flex"} alignItems="flex-start" flexDirection={"column"}>
         <TextField
           name="videos"
           label="Add Video"
@@ -585,7 +662,17 @@ const UpdateProduct = () => {
             }
           }}
         />
+        <TextField
+          variant="outlined"
+          placeholder="Click to Add Videos"
+          type={"file"}
+          onChange={handleFileUploads}
+          name="videos"
+          helperText="Select Product Videos"
+          disabled={flags.videosLoading}
+        />
         <Button
+          disabled={flags.videosLoading}
           onClick={() => {
             if (null !== videosIPRef.current) {
               handleVideoAdd(videosIPRef.current.value);
@@ -593,7 +680,7 @@ const UpdateProduct = () => {
             }
           }}
         >
-          Add Video
+          {flags.videosLoading ? <CircularProgress /> : "Add Video"}
         </Button>
       </Box>
       <Divider sx={{ margin: "20px 0px" }} />
