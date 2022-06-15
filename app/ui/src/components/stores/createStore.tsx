@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from "react";
+import React, { useContext, useRef, useState } from "react";
 
 import {
   setField,
@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   AppBar,
   Button,
+  CircularProgress,
   Container,
   Dialog,
   Divider,
@@ -33,6 +34,7 @@ import { TransitionProps } from "@mui/material/transitions";
 import Close from "@mui/icons-material/Close";
 import { PaddedDividerSpacer } from "../../pages/product";
 import { useSnackbar } from "notistack";
+import { StorageContext } from "../..";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -153,6 +155,27 @@ const CreateStore: React.FC<{
         );
         setOpen(false);
       }
+    }
+  };
+
+  const [loading, setLoading] = useState(false);
+  const storageContext = useContext(StorageContext);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length === 1) {
+      setLoading(true);
+      const files = e.target.files;
+      const cid = await storageContext.putFile(files[0]);
+      if (cid && cid.length > 0) {
+        dispatcher(setField({ field: "logo", value: cid }));
+      } else {
+        enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+          variant: "error",
+        });
+      }
+      setLoading(false);
+    } else {
+      enqueueSnackbar("Please Select a Image as Logo for you store!");
     }
   };
 
@@ -330,7 +353,7 @@ const CreateStore: React.FC<{
               marginBottom: "10px",
             }}
           />
-          <TextField
+          {/* <TextField
             name="logo"
             value={curStore.logo}
             onChange={handleChange}
@@ -340,6 +363,31 @@ const CreateStore: React.FC<{
             helperText={"It can be a url to image or a cid"}
             sx={{
               marginBottom: "10px",
+            }}
+          /> */}
+          <Typography
+            sx={{ margin: "10px 0px" }}
+            variant="body2"
+            fontWeight={"bold"}
+          >
+            Logo: {curStore.logo}
+          </Typography>
+          <TextField
+            variant="outlined"
+            placeholder="Click to Add Logo"
+            type={"file"}
+            fullWidth
+            required
+            onChange={handleLogoUpload}
+            name="logo"
+            helperText="Select a Logo"
+            disabled={loading}
+            color="success"
+            sx={{
+              marginBottom: "10px",
+            }}
+            InputProps={{
+              endAdornment: loading && <CircularProgress />,
             }}
           />
           <TextField

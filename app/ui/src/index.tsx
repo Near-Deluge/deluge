@@ -20,6 +20,7 @@ import { RATING_CONTRACT_NAME, STABLECOIN_CONTRACT_NAME } from "./config";
 import { Web3Storage } from "web3.storage";
 import { Slide } from "@mui/material";
 import { KeyStore } from "near-api-js/lib/key_stores";
+import Storage from "./utils/storage";
 
 // TODO: Remove it before deploying to world
 const WEB3_STORAGE_API =
@@ -157,6 +158,10 @@ const initializeContract = async () => {
 const web3Instance = initWeb3Storage();
 export const WebContext = React.createContext(web3Instance);
 
+export const StorageContext = React.createContext(
+  new Storage(WEB3_STORAGE_API)
+);
+
 // Creating Contexts for Contracts as in redux, these contracts are not string serializable
 export const BaseContractContext = React.createContext<Contract | null>(null);
 export const RatingContractContext = React.createContext<Contract | null>(null);
@@ -175,7 +180,8 @@ initializeContract().then(
     rating_contract,
     keyStore,
   }) => {
-    const container = document.getElementById("root") || document.createElement("div");
+    const container =
+      document.getElementById("root") || document.createElement("div");
     const root = createRoot(container);
     root.render(
       <Provider store={store}>
@@ -189,24 +195,26 @@ initializeContract().then(
                   <RatingContractContext.Provider value={rating_contract}>
                     <DLGTContractContext.Provider value={dlgt_contract}>
                       <WebContext.Provider value={web3Instance}>
-                        <SnackbarProvider
-                          maxSnack={5}
-                          autoHideDuration={3000}
-                          anchorOrigin={{
-                            vertical: "bottom",
-                            horizontal: "right",
-                          }}
-                          TransitionComponent={Slide}
-                        >
-                          <App
-                            rating_contract={rating_contract}
-                            dlgt_contract={dlgt_contract}
-                            base_contract={base_contract}
-                            currentUser={currentUser}
-                            nearConfig={nearConfig}
-                            wallet={walletConnection}
-                          />
-                        </SnackbarProvider>
+                        <StorageContext.Provider value={new Storage(WEB3_STORAGE_API)}>
+                          <SnackbarProvider
+                            maxSnack={5}
+                            autoHideDuration={3000}
+                            anchorOrigin={{
+                              vertical: "bottom",
+                              horizontal: "right",
+                            }}
+                            TransitionComponent={Slide}
+                          >
+                            <App
+                              rating_contract={rating_contract}
+                              dlgt_contract={dlgt_contract}
+                              base_contract={base_contract}
+                              currentUser={currentUser}
+                              nearConfig={nearConfig}
+                              wallet={walletConnection}
+                            />
+                          </SnackbarProvider>
+                        </StorageContext.Provider>
                       </WebContext.Provider>
                     </DLGTContractContext.Provider>
                   </RatingContractContext.Provider>

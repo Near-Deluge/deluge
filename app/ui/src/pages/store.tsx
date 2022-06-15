@@ -10,8 +10,8 @@ import {
   IconButton,
   Box,
 } from "@mui/material";
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useContext, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link as ReduxLink, useNavigate } from "react-router-dom";
 import Collapse from "@mui/material/Collapse";
 
@@ -19,6 +19,10 @@ import AddProduct from "../components/products/addProduct";
 import { Add, Close } from "@mui/icons-material";
 import { Product } from "../utils/interface";
 import StoreProductCard from "../components/products/store_product_card";
+
+import isIPFS from "is-ipfs";
+import { StorageContext } from "..";
+import { setStore } from "../redux/slices/contract.slice";
 
 type IStore = {};
 
@@ -39,6 +43,24 @@ const Store: React.FC<IStore> = ({}) => {
     (state: any) => state.productSlice.user_cid_details
   );
   const [isAddProductOpen, setAddProductOpen] = React.useState(false);
+  const storageContext = useContext(StorageContext);
+  const dispatcher = useDispatch();
+  useEffect(() => {
+    (async () => {
+      if (store.logo !== null && isIPFS.cid(store.logo)) {
+        const value = await storageContext.getFirstFile(store.logo);
+        if (value) {
+          let ObjLink = URL.createObjectURL(value);
+          dispatcher(
+            setStore({
+              ...store,
+              logo: ObjLink,
+            })
+          );
+        }
+      }
+    })();
+  }, []);
 
   return (
     <Container>
@@ -91,7 +113,7 @@ const Store: React.FC<IStore> = ({}) => {
       )}
       <Grid container padding={"10px 0px"}>
         {!isAddProductOpen ? (
-          <Tooltip title="Open Add New Product" >
+          <Tooltip title="Open Add New Product">
             <Button
               onClick={() => {
                 setAddProductOpen(true);
@@ -113,7 +135,7 @@ const Store: React.FC<IStore> = ({}) => {
             </IconButton>
           </Tooltip>
         )}
-        <Collapse in={isAddProductOpen} >
+        <Collapse in={isAddProductOpen}>
           <AddProduct />
         </Collapse>
       </Grid>

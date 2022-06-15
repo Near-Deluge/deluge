@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext, useState } from "react";
 
 import {
   setField,
@@ -12,12 +12,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
+  CircularProgress,
   Container,
   Divider,
   TextField,
   Typography,
 } from "@mui/material";
 import { store } from "../../redux/store";
+import { useSnackbar } from "notistack";
+import { StorageContext } from "../..";
 
 const UpdateStore: React.FC<{
   base_contract: any;
@@ -54,7 +57,7 @@ const UpdateStore: React.FC<{
       args: { id: wallet.getAccountId(), ...finalState },
       meta: "update_store",
     });
-    console.log(res);
+    enqueueSnackbar("Successfully Updated the Store :)", {variant: "success"});
   };
 
   const handleChange = (e: any) => {
@@ -64,6 +67,28 @@ const UpdateStore: React.FC<{
         value: e.target.value,
       })
     );
+  };
+
+  const [loading, setLoading] = useState(false);
+  const storageContext = useContext(StorageContext);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length === 1) {
+      setLoading(true);
+      const files = e.target.files;
+      const cid = await storageContext.putFile(files[0]);
+      if (cid && cid.length > 0) {
+        dispatcher(setField({ field: "logo", value: cid }));
+      } else {
+        enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+          variant: "error",
+        });
+      }
+      setLoading(false);
+    } else {
+      enqueueSnackbar("Please Select a Image as Logo for you store!");
+    }
   };
 
   return (
@@ -157,7 +182,7 @@ const UpdateStore: React.FC<{
             marginBottom: "10px",
           }}
         />
-        <TextField
+        {/* <TextField
           name="logo"
           value={curStore.logo}
           onChange={handleChange}
@@ -167,6 +192,25 @@ const UpdateStore: React.FC<{
           helperText={"It can be a url to image or a cid"}
           sx={{
             marginBottom: "10px",
+          }}
+        /> */}
+        <Typography sx={{margin: "10px 0px"}} variant="body2" fontWeight={"bold"}>Logo: {curStore.logo}</Typography>
+        <TextField
+          variant="outlined"
+          placeholder="Click to Add Logo"
+          type={"file"}
+          fullWidth
+          required
+          onChange={handleLogoUpload}
+          name="logo"
+          helperText="Select a Logo"
+          disabled={loading}
+          color="success"
+          sx={{
+            marginBottom: "10px",
+          }}
+          InputProps={{
+            endAdornment: loading && <CircularProgress />
           }}
         />
         <TextField
@@ -199,7 +243,7 @@ const UpdateStore: React.FC<{
           }}
         />
         <Divider sx={{ margin: "20px 0px" }} />
-        <Button variant="contained" onClick={handleSubmit}>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
           {" "}
           Update Store{" "}
         </Button>

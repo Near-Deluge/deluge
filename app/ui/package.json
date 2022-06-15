@@ -27,6 +27,7 @@
     "deluge-helper": "^0.0.3",
     "events": "^3.3.0",
     "flatted": "^3.2.5",
+    "is-ipfs": "^6.0.2",
     "near-api-js": "^0.44.2",
     "near-seed-phrase": "^0.2.0",
     "notistack": "^2.0.5",

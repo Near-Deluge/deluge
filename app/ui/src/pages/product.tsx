@@ -25,7 +25,7 @@ import {
   Product_Storage,
   Store,
 } from "../utils/interface";
-import { WalletConnectionContext, WebContext } from "../index";
+import { StorageContext, WalletConnectionContext, WebContext } from "../index";
 import {
   addOneCidAllUserDetails,
   addOneCidUserDetails,
@@ -36,9 +36,9 @@ import { BaseContractContext } from "../index";
 import { addItem, removeItem } from "../redux/slices/cart.slice";
 import { useSnackbar } from "notistack";
 import Ratings from "../components/ratings";
-import useIsAUserProduct from "../hooks/useIsAUserProduct";
-import useGetOrFetchProductCid from "../hooks/useGetOrFetchProductCid";
 import useProductIsInCart from "../hooks/useProductIsInCart";
+
+import isIPFS from "is-ipfs";
 
 export const initProductBC: IProduct = {
   pid: "",
@@ -247,6 +247,48 @@ const Product = () => {
     getShopIdFromProductID(currentProductBC.pid)
   );
 
+  const storageContext = useContext(StorageContext);
+
+  const parseImageLink = async (link: string, index: number) => {
+    if (isIPFS.cid(link)) {
+      const value = await storageContext.getFirstFile(link);
+      if (value) {
+        let ObjLink = URL.createObjectURL(value);
+        let oldImgArr = currentProduct.images.map((item, i) => {
+          if (i === index) {
+            return ObjLink;
+          } else {
+            return item;
+          }
+        });
+        setCurrentProduct({
+          ...currentProduct,
+          images: [...oldImgArr],
+        });
+      }
+    }
+  };
+
+  const parseVideoLink = async (link: string, index: number) => {
+    if (isIPFS.cid(link)) {
+      const value = await storageContext.getFirstFile(link);
+      if (value) {
+        let ObjLink = URL.createObjectURL(value);
+        let oldImgArr = currentProduct.videos.map((item, i) => {
+          if (i === index) {
+            return ObjLink;
+          } else {
+            return item;
+          }
+        });
+        setCurrentProduct({
+          ...currentProduct,
+          videos: [...oldImgArr],
+        });
+      }
+    }
+  };
+
   return (
     <Paper sx={{ padding: "20px" }}>
       <Box display={"flex"}>
@@ -275,6 +317,7 @@ const Product = () => {
               variant="woven"
             >
               {currentProduct.images.map((img, index) => {
+                parseImageLink(img, index);
                 return (
                   <ImageListItem key={`${img}${index}`}>
                     <img
@@ -296,6 +339,7 @@ const Product = () => {
               variant="woven"
             >
               {currentProduct.videos.map((video, index) => {
+                parseVideoLink(video, index);
                 return <video key={`${video}${index}`} src={video} />;
               })}
             </ImageList>
