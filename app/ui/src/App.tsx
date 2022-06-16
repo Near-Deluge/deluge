@@ -40,6 +40,7 @@ import Cart from "./pages/cart";
 import CompleteOrder from "./pages/completeOrder";
 import NotFound404 from "./pages/404";
 import RecoverShopSeedPhrases from "./pages/recoverShopSeedPhrases";
+import LocalAddresses from "./pages/localAddresses";
 
 // TODO: Fix this to concrete types from any
 type IApp = {
@@ -201,6 +202,7 @@ export default function App({
           <Route path="/cart" element={<Cart />} />
           <Route path="/complete_order" element={<CompleteOrder />} />
           <Route path="/recover_shop_seeds" element={<RecoverShopSeedPhrases />} />
+          <Route path="/local_addresses" element={<LocalAddresses />} />
           <Route path="*" element={<NotFound404 />} />
         </Routes>
       </Container>
