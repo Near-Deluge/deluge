@@ -504,7 +504,6 @@ const Account = () => {
                   sx={{ padding: "10px", margin: "10px 0px" }}
                   key={order.id}
                 >
-                  <Typography>Order ID: {order.id}</Typography>
                   <Typography
                     color={"primary"}
                     textAlign="center"

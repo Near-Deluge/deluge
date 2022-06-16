@@ -21,6 +21,7 @@ export interface Store {
 export interface Product {
   pid: string;
   cid: CIDString;
+  media: string;
   inventory: Number;
   name: string;
   // Price will be a string as U128 expects a string

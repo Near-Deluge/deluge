@@ -420,7 +420,7 @@ const CreateStore: React.FC<{
             }}
           />
           <Divider sx={{ margin: "20px 0px" }} />
-          <Button variant="contained" onClick={handleSubmit}>
+          <Button variant="contained" onClick={handleSubmit} disabled={loading}>
             {" "}
             Create Store{" "}
           </Button>

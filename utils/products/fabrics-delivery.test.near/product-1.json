@@ -1,6 +1,7 @@
 {
     "pid": "product-1",
     "cid": "bafybeiguf6qdgr5fudfgkkz3qpvwwfztwldnpfj245zlrgqayb2yfhsv6u",
+    "media": "https://ipfs.pixura.io/ipfs/QmUyARmq5RUJk5zt7KUeaMLYB8SQbKHp3Gdqy5WSxRtPNa/SeaofRoses.jpg",
     "inventory": "200",
     "name": "Sample Product 2",
     "price": "7420000000"

@@ -32,6 +32,7 @@ import {
   MenuItem,
   CircularProgress,
   IconButton,
+  Link,
 } from "@mui/material";
 import { Box } from "@mui/system";
 import InventoryIcon from "@mui/icons-material/Inventory";
@@ -249,6 +250,7 @@ const UpdateProduct = () => {
   const [flags, setFlags] = React.useState({
     imagesLoading: false,
     videosLoading: false,
+    logoLoading: false
   });
 
   const storageContext = useContext(StorageContext);
@@ -299,6 +301,34 @@ const UpdateProduct = () => {
         setFlags({
           ...flags,
           videosLoading: false,
+        });
+      }
+      if (e.target.name === "product_media") {
+        console.log(e.target.value);
+        setFlags({
+          ...flags,
+          logoLoading: true,
+        });
+        let files = e.target.files;
+        if (files.length === 1) {
+          const cid = await storageContext.putFile(files[0]);
+          console.log(files[0].name);
+          if (cid && cid.length > 0) {
+            setCurrentProductBC({
+              ...currentProductBC,
+              media: `https://ipfs.io/ipfs/${cid}/${files[0].name}`,
+            });
+          } else {
+            enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+              variant: "error",
+            });
+          }
+        } else {
+          enqueueSnackbar("You can only select one Image here!!!");
+        }
+        setFlags({
+          ...flags,
+          logoLoading: false,
         });
       }
     } else {
@@ -754,6 +784,24 @@ const UpdateProduct = () => {
         sx={{
           marginBottom: "10px",
         }}
+      />
+      <Link
+        href={currentProductBC.media}
+        target="_blank"
+        rel="noopener"
+        sx={{ width: "100%" }}
+        display={flags.logoLoading ? "none" : "block"}
+      >{`Media Link: ${currentProductBC.media}`}</Link>
+      <TextField
+        variant="outlined"
+        placeholder="Click to Add a Product Photo"
+        type={"file"}
+        onChange={handleFileUploads}
+        name="product_media"
+        helperText="This will be displayed in NFTs for this product purchases."
+        disabled={flags.logoLoading}
+        sx={{ marginBottom: "10px" }}
+        InputProps={{ endAdornment: flags.logoLoading && <CircularProgress /> }}
       />
       <TextField
         name="price"

@@ -45,6 +45,7 @@ export const initProductBC: IProduct = {
   cid: "",
   inventory: 0,
   name: "",
+  media: "",
   price: "",
 };
 
