@@ -113,3 +113,14 @@ export interface Rating_Storage {
   image?: Array<string>;
   videos?: Array<string>;
 }
+
+export interface LocalAddress {
+  name: string,
+  email: string,
+  address: string,
+  state: string,
+  country: string,
+  pincode: string,
+  district: string,
+  phone: string
+}

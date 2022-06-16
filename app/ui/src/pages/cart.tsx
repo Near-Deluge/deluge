@@ -8,22 +8,24 @@ import {
   Link as MuiLink,
   MenuItem,
   Modal,
-  Divider,
   InputAdornment,
   IconButton,
   CircularProgress,
+  Divider,
+  ListItem,
+  Select,
 } from "@mui/material";
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   BaseContractContext,
   DLGTContractContext,
-  KeyStoreContext,
   WalletConnectionContext,
   WebContext,
 } from "..";
 import {
   LineItem,
+  LocalAddress,
   Order,
   Order_Specification,
   Product,
@@ -35,11 +37,7 @@ import CryptoJS from "crypto-js";
 import Randomstring from "randomstring";
 
 // @ts-ignore
-import { ecEncrypt, ecDecrypt } from "deluge-helper";
-
-import { fromJSON, stringify } from "flatted";
-
-import * as nearAPI from "near-api-js";
+import { ecEncrypt } from "deluge-helper";
 
 // Jdenticon doesn't have type interface so ts-ignore
 // @ts-ignore
@@ -51,6 +49,8 @@ import { Close, ShuffleOutlined } from "@mui/icons-material";
 import { KeyStore } from "near-api-js/lib/key_stores";
 import bs58 from "bs58";
 import { useSnackbar } from "notistack";
+import { PaddedDividerSpacer } from "./product";
+import useLocalAddresses from "../hooks/useLocalAddress";
 
 // Boatload of Gas
 export const ATTACHED_GAS = "300000000000000";
@@ -62,6 +62,9 @@ export const AddressForm: React.FC<{
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => any;
   handleSubmitClick: () => any;
   handleClose: () => any;
+  handleAddressChange: (e: any) => any;
+  localAddresses: Array<LocalAddress>;
+  currentAddressIdx: number;
 }> = ({
   loading,
   addressState,
@@ -69,7 +72,16 @@ export const AddressForm: React.FC<{
   handleChange,
   handleSubmitClick,
   handleClose,
+  handleAddressChange,
+  localAddresses,
+  currentAddressIdx,
 }) => {
+  useEffect(() => {
+    if (secretInputRef.current !== null) {
+      secretInputRef.current.value = Randomstring.generate(16);
+    }
+  }, []);
+
   return (
     <Grid container maxHeight={"100vh"} sx={{ overflowY: "scroll" }}>
       <Grid item xs={1} />
@@ -90,7 +102,28 @@ export const AddressForm: React.FC<{
               <Close color="error" />
             </IconButton>
           </Box>
-          <Divider sx={{ margin: "20px 0px" }} />
+          <PaddedDividerSpacer v_m={10} />
+          <Box display={"flex"} justifyContent={"space-between"}>
+            <Link to={"/local_addresses"}>
+              {" "}
+              <Button variant="contained">View all Addresses </Button>
+            </Link>
+            {currentAddressIdx >= 0 ? (
+              <Select value={currentAddressIdx} onChange={handleAddressChange}>
+                {localAddresses.map((item, idx) => {
+                  return (
+                    <MenuItem
+                      value={idx}
+                    >{`${item.name} ${item.email}`}</MenuItem>
+                  );
+                })}
+                <MenuItem value={-1}>{"New Address"}</MenuItem>
+              </Select>
+            ) : (
+              <Typography color={"primary"}>Type New Address</Typography>
+            )}
+          </Box>
+          <Divider sx={{ margin: "10px 0px" }} />
           <Box
             sx={{
               maxWidth: "600px",
@@ -231,7 +264,7 @@ export const CartItem: React.FC<{
 
   const allStore = useSelector((state: any) => state.storeSlice.allStore);
 
-  const {enqueueSnackbar} = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
 
   const getStoreFromPid = (pid: string) => {
     let res = "";
@@ -244,17 +277,20 @@ export const CartItem: React.FC<{
   };
 
   const handleRemoveItem = () => {
-    
-    dispatcher(removeItem({
-      orderId: orderId,
-      productId: lineItem.product_id
-    }));
+    dispatcher(
+      removeItem({
+        orderId: orderId,
+        productId: lineItem.product_id,
+      })
+    );
 
-    enqueueSnackbar(`Removed Product :${lineItem.product_id} from OrderID: ${orderId}`,{
-      variant: "info"
-    })
-  
-  }
+    enqueueSnackbar(
+      `Removed Product :${lineItem.product_id} from OrderID: ${orderId}`,
+      {
+        variant: "info",
+      }
+    );
+  };
 
   return (
     <Paper sx={{ maxWidth: "500px", padding: "10px", margin: "10px" }}>
@@ -314,9 +350,13 @@ export const CartItem: React.FC<{
           <Button variant="contained" color="error" onClick={handleRemoveItem}>
             Remove from Cart
           </Button>
-          <Button variant="contained" color="info" onClick={() => {
-            navigation(`/products/${product.cid}`, {replace: false});
-          }}>
+          <Button
+            variant="contained"
+            color="info"
+            onClick={() => {
+              navigation(`/products/${product.cid}`, { replace: false });
+            }}
+          >
             View More Information
           </Button>
         </Grid>
@@ -375,7 +415,7 @@ const Cart = () => {
     });
   }, [userDetails]);
 
-  const [addressState, setAddressState] = React.useState<Order_Specification>({
+  const initAddressState = {
     address: "",
     country: "",
     district: "",
@@ -385,6 +425,10 @@ const Cart = () => {
     pincode: "",
     phone: "",
     userId: "",
+  };
+
+  const [addressState, setAddressState] = React.useState<Order_Specification>({
+    ...initAddressState,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -489,12 +533,42 @@ const Cart = () => {
     // Once stored then place order for one seller in this transaction
 
     setCurrentOrderId(order_id);
+    if (localAddresses.length > 0) {
+      setAddressState({
+        ...addressState,
+        ...localAddresses[0],
+      });
+      setCurrentAddressIdx(0);
+    }
     handleOpen();
   };
 
   const [open, setOpen] = React.useState<boolean>(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (parseInt(e.target.value) >= 0) {
+      setAddressState({
+        ...addressState,
+        ...localAddresses[parseInt(e.target.value)],
+      });
+      setCurrentAddressIdx(parseInt(e.target.value));
+    } else {
+      setAddressState({
+        ...initAddressState,
+      });
+      setCurrentAddressIdx(-1);
+    }
+  };
+
+  const [localAddresses] = useLocalAddresses();
+  const [currentAddressIdx, setCurrentAddressIdx] = useState(() => {
+    if (localAddresses.length > 0) {
+      return 0;
+    }
+    return -1;
+  });
 
   return (
     <Paper sx={{ padding: "10px" }}>
@@ -511,6 +585,9 @@ const Cart = () => {
           handleChange={handleChange}
           handleSubmitClick={handleSubmitClick}
           handleClose={handleClose}
+          handleAddressChange={handleAddressChange}
+          localAddresses={localAddresses}
+          currentAddressIdx={currentAddressIdx}
         />
       </Modal>
       {cartOrders.length <= 0 ? (
@@ -540,7 +617,14 @@ const Cart = () => {
                     {order.payload.line_items.map(
                       (item: LineItem, index: React.Key | null | undefined) => {
                         let prod = getProductBCFromPid(item.product_id);
-                        return <CartItem key={item.product_id + index} product={prod} lineItem={item} orderId={order.id}/>;
+                        return (
+                          <CartItem
+                            key={item.product_id + index}
+                            product={prod}
+                            lineItem={item}
+                            orderId={order.id}
+                          />
+                        );
                       }
                     )}
                     <Box
@@ -564,19 +648,6 @@ const Cart = () => {
                 );
               })}
           </Grid>
-          <Box
-            display={"flex"}
-            flexDirection="column"
-            alignItems={"flex-end"}
-            justifyContent="flex-end"
-          >
-            {/* <Typography fontWeight={"bold"} textAlign="end">
-              Total Payable: {change_stable_to_human(cartTotal)} DLGT
-            </Typography>
-            <Button variant="contained" onClick={handleBuy}>
-              Proceed to Buy
-            </Button> */}
-          </Box>
         </React.Fragment>
       )}
     </Paper>
