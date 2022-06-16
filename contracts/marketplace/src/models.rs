@@ -45,6 +45,7 @@ pub enum StorageKey {
 pub struct Product {
     pub pid: String,
     pub cid: String,
+    pub media: String,
     pub price: U128, 
     pub inventory: U128,
     pub name: String,

@@ -228,23 +228,28 @@ impl DelugeBase {
             env::promise_batch_create(get_formatted_nft_account_name(seller_acc_name.to_string()));
 
         for item in &order.payload.line_items {
+            //  Fetch the product here, so that can be used to reference media.
+
+            // Either you have this product, or it should fail. !!! Better to fail here !!!
+            let product = self.products.get(&format!("{}:{}", order.seller_id, item.product_id)).unwrap();
+
             // Token IDs will be in form of order_id:seller_id:product_id
             let arg_str = json!({
                 "token_id": format!("{}:{}:{}",order.id, order.seller_id, item.product_id),
                 "receiver_id": order.customer_account_id,
                 "token_metadata": TokenMetadata { 
                     title: Some(format!("Order:{}", order.id)), 
-                    description: Some(format!("Product Id: {} | Order Status:{:?}", item.product_id, order.status)), 
-                    media: Some(order.cid.to_owned()), 
-                    media_hash: None, 
+                    description: Some(format!("Product Id: {} | Order Status:{:?}", item.product_id, OrderStatus::COMPLETED)), 
+                    media: Some(product.media.to_owned()), 
+                    media_hash: Some(sha256(&product.media.to_owned().as_bytes()).into()), 
                     copies: Some(1), 
                     issued_at: Some(env::block_timestamp().to_string()), 
                     expires_at: Some("never".to_string()), 
                     starts_at: Some(env::block_timestamp().to_string()), 
                     updated_at: Some("never".to_string()), 
                     extra: None, 
-                    reference: None, 
-                    reference_hash: None 
+                    reference: Some(order.cid.to_owned()), 
+                    reference_hash: Some(sha256(order.cid.to_owned().as_bytes()).into()) 
                 }
             })
             .to_string();

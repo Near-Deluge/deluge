@@ -149,6 +149,7 @@ const Store: React.FC<IStore> = ({}) => {
                 inventory={item.inventory}
                 name={item.name}
                 pid={item.pid}
+                media={item.media}
                 price={item.price}
                 key={item.cid}
               />

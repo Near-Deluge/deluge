@@ -69,6 +69,7 @@ impl DelugeBase {
         store_id: String,
         inventory: Option<U128>,
         cid: Option<String>,
+        media: Option<String>,
         name: Option<String>,
         price: Option<U128>,
     ) -> String {
@@ -100,6 +101,10 @@ impl DelugeBase {
             Some(x) => product.cid = x,
             None => {}
         }
+        match media {
+            Some(x) => product.media = x,
+            None => {}
+        }
 
         // TODO: Check if enough NEAR is present in storage costs.
         self.check_storage_product(product.clone());
@@ -110,9 +115,10 @@ impl DelugeBase {
     }
 
     pub fn delete_product(&mut self, store_id: String, pid: String) -> String {
-        let mut store = self.stores.get(&store_id).expect("Store doesn't exits. ");
 
-        // TODO: Once product is deleted successfully refund the storage to the store owner.
+        // TODO: Product can only be deleted once there's no active order.
+
+        let mut store = self.stores.get(&store_id).expect("Store doesn't exits. ");
 
         let pkey = format!("{}:{}", store_id, pid);
         self.products.get(&pkey).expect("Product doesn't exists!!");

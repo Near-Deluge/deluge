@@ -21,6 +21,7 @@ import {
   InputAdornment,
   MenuItem,
   CircularProgress,
+  Link,
 } from "@mui/material";
 import { Box } from "@mui/system";
 import BN from "big.js";
@@ -115,6 +116,7 @@ const AddProduct = () => {
       cid: "",
       inventory: 0,
       pid: "",
+      media: "",
       name: "",
       price: "",
     });
@@ -238,10 +240,9 @@ const AddProduct = () => {
         meta: "create_product",
       });
       setLoading(false);
-
     } catch (e) {
       console.log(e);
-      enqueueSnackbar("Some Error Occured!!!", {variant: "error"});
+      enqueueSnackbar("Some Error Occured!!!", { variant: "error" });
       setLoading(false);
 
       return;
@@ -264,10 +265,10 @@ const AddProduct = () => {
   const [flags, setFlags] = React.useState({
     imagesLoading: false,
     videosLoading: false,
+    logoLoading: false,
   });
 
   const handleFileUploads = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  
     if (e.target.files && e.target.files.length > 0) {
       if (e.target.name === "images") {
         let files = e.target.files;
@@ -276,7 +277,7 @@ const AddProduct = () => {
           imagesLoading: true,
         });
         console.log(files.length);
-        for(let i = 0; i < files.length; ++i) {
+        for (let i = 0; i < files.length; ++i) {
           const cid = await storageContext.putFile(files[i]);
           if (cid && cid.length > 0) {
             handleImageAdd(cid);
@@ -286,21 +287,20 @@ const AddProduct = () => {
             });
           }
         }
-        
+
         setFlags({
           ...flags,
           imagesLoading: false,
         });
       }
       if (e.target.name === "videos") {
-        
         let files = e.target.files;
         setFlags({
           ...flags,
           videosLoading: true,
         });
 
-        for(let i = 0; i < files.length; ++i) {
+        for (let i = 0; i < files.length; ++i) {
           const cid = await storageContext.putFile(files[i]);
           if (cid && cid.length > 0) {
             handleVideoAdd(cid);
@@ -310,10 +310,38 @@ const AddProduct = () => {
             });
           }
         }
-        
+
         setFlags({
           ...flags,
           videosLoading: false,
+        });
+      }
+      if (e.target.name === "product_media") {
+        console.log(e.target.value);
+        setFlags({
+          ...flags,
+          logoLoading: true,
+        });
+        let files = e.target.files;
+        if (files.length === 1) {
+          const cid = await storageContext.putFile(files[0]);
+          console.log(files[0].name);
+          if (cid && cid.length > 0) {
+            setBCProductStorage({
+              ...blockhain_product_storage,
+              media: `https://ipfs.io/ipfs/${cid}/${files[0].name}`,
+            });
+          } else {
+            enqueueSnackbar("Some Error Happened in Uploading Files!!!", {
+              variant: "error",
+            });
+          }
+        } else {
+          enqueueSnackbar("You can only select one Image here!!!");
+        }
+        setFlags({
+          ...flags,
+          logoLoading: false,
         });
       }
     } else {
@@ -763,6 +791,24 @@ const AddProduct = () => {
           marginBottom: "10px",
         }}
       />
+      <Link
+        href={blockhain_product_storage.media}
+        target="_blank"
+        rel="noopener"
+        sx={{ width: "100%" }}
+        display={flags.logoLoading ? "none" : "block"}
+      >{`Media Link: ${blockhain_product_storage.media}`}</Link>
+      <TextField
+        variant="outlined"
+        placeholder="Click to Add a Product Photo"
+        type={"file"}
+        onChange={handleFileUploads}
+        name="product_media"
+        helperText="This will be displayed in NFTs for this product purchases."
+        disabled={flags.logoLoading}
+        sx={{ marginBottom: "10px" }}
+        InputProps={{ endAdornment: flags.logoLoading && <CircularProgress /> }}
+      />
       <TextField
         name="price"
         value={blockhain_product_storage.price}
@@ -778,10 +824,7 @@ const AddProduct = () => {
       />
       <Divider sx={{ margin: "20px 0px" }} />
       <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-        {
-          loading ? <CircularProgress /> : " Create Product"
-        }
-       
+        {loading ? <CircularProgress /> : " Create Product"}
       </Button>
     </Paper>
   );
