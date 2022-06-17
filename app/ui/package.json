@@ -25,6 +25,7 @@
     "constants-browserify": "^1.0.0",
     "crypto-js": "^4.1.1",
     "deluge-helper": "^0.0.3",
+    "dotenv": "^16.0.1",
     "events": "^3.3.0",
     "flatted": "^3.2.5",
     "is-ipfs": "^6.0.2",
