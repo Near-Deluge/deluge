@@ -28,7 +28,7 @@ import {
   addOneCidUserDetails,
   setAllProducts,
   setUserProducts,
-  addOneCidAllUserDetails
+  addOneCidAllUserDetails,
 } from "./redux/slices/products.slice";
 import { Product, Store as IStore } from "./utils/interface";
 import { useContext } from "react";
@@ -41,6 +41,10 @@ import CompleteOrder from "./pages/completeOrder";
 import NotFound404 from "./pages/404";
 import RecoverShopSeedPhrases from "./pages/recoverShopSeedPhrases";
 import LocalAddresses from "./pages/localAddresses";
+import RoadMap from "./pages/roadmap";
+import Support from "./pages/support";
+import BrandKit from "./pages/brandkit";
+import TermsOfService from "./pages/terms_of_service";
 
 // TODO: Fix this to concrete types from any
 type IApp = {
@@ -161,9 +165,7 @@ export default function App({
     dispatcher(setAllProducts(allProducts));
 
     fetch_and_set_all_cids(allProducts);
-
   };
-
 
   React.useEffect(() => {
     get_all_stores();
@@ -175,37 +177,48 @@ export default function App({
     checkStore();
   }, []);
   return (
-    <div>
-      <Navbar
-        balance={stable_coin_state.balance}
-        base_contract={base_contract}
-        user={currentUser}
-        wallet={wallet}
-      />
-      <Container maxWidth="lg">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route
-            path="/add_store"
-            element={<AddStore base_contract={base_contract} wallet={wallet} />}
-          />
-          <Route
-            path="/update_store"
-            element={
-              <UpdateStore base_contract={base_contract} wallet={wallet} />
-            }
-          />
-          <Route path="/store" element={<Store />} />
-          <Route path="/products/:cid" element={<ProductView />} />
-          <Route path="/products/:cid/update" element={<UpdateProduct />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/complete_order" element={<CompleteOrder />} />
-          <Route path="/recover_shop_seeds" element={<RecoverShopSeedPhrases />} />
-          <Route path="/local_addresses" element={<LocalAddresses />} />
-          <Route path="*" element={<NotFound404 />} />
-        </Routes>
-      </Container>
+    <div style={{display:"flex", flexDirection: "column", justifyContent: "space-between", minHeight: "100vh"}}>
+      <div>
+        <Navbar
+          balance={stable_coin_state.balance}
+          base_contract={base_contract}
+          user={currentUser}
+          wallet={wallet}
+        />
+        <Container maxWidth="lg">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/add_store"
+              element={
+                <AddStore base_contract={base_contract} wallet={wallet} />
+              }
+            />
+            <Route
+              path="/update_store"
+              element={
+                <UpdateStore base_contract={base_contract} wallet={wallet} />
+              }
+            />
+            <Route path="/store" element={<Store />} />
+            <Route path="/products/:cid" element={<ProductView />} />
+            <Route path="/products/:cid/update" element={<UpdateProduct />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="/roadmap" element={<RoadMap />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/brand" element={<BrandKit />} />
+            <Route path="/terms_of_service" element={<TermsOfService />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/complete_order" element={<CompleteOrder />} />
+            <Route
+              path="/recover_shop_seeds"
+              element={<RecoverShopSeedPhrases />}
+            />
+            <Route path="/local_addresses" element={<LocalAddresses />} />
+            <Route path="*" element={<NotFound404 />} />
+          </Routes>
+        </Container>
+      </div>
       <Footer />
     </div>
   );
