@@ -52,8 +52,22 @@ import { useSnackbar } from "notistack";
 import { PaddedDividerSpacer } from "./product";
 import useLocalAddresses from "../hooks/useLocalAddress";
 
+import BigNumber from "big.js";
+
 // Boatload of Gas
 export const ATTACHED_GAS = "300000000000000";
+
+function add_two_percent(amount: string) {
+  let amt = new BigNumber(amount);
+  let two_percent = amt.div(100).mul(2);
+  const MAX_FEES = new BigNumber(200000000);
+
+  if (two_percent.cmp(MAX_FEES) !== -1) {
+    return amt.add(MAX_FEES).toString();
+  } else {
+    return amt.add(two_percent).toString();
+  }
+}
 
 export const AddressForm: React.FC<{
   loading: boolean;
@@ -496,18 +510,15 @@ const Cart = () => {
             status: Status[Status.PENDING],
           };
 
-          // let strMsg = stringify(finalObj);
-
           const base_contract_name = base_contract?.contractId;
 
           const args = {
             receiver_id: base_contract_name,
-            amount: finalObj.payload.amount.toString(),
+            amount: add_two_percent(finalObj.payload.amount.toString()),
             memo: finalObj.id,
             msg: JSON.stringify({ ...finalObj }),
           };
 
-          // console.log(JSON.parse(args.msg));
           setLoading(false);
 
           // Send transaction to the Blockchain
@@ -517,7 +528,7 @@ const Cart = () => {
               ...args,
             },
             gas: ATTACHED_GAS,
-            amount: "1", // attached deposit in yoctoNEAR (optional)
+            amount: "1", // attached deposit in yoctoNEAR 
           });
         }
       }

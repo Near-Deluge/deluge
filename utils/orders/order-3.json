@@ -6,10 +6,10 @@
     "cid": "Qwer3872958hiruh3ijnfwdfsg",
     "customer_secret": "888b19a43b151683c87895f6211d9f8640f97bdc8ef32f03dbe057c8f5e56d32", 
     "payload": {
-        "amount": "4480000000",
+        "amount": "22400000000",
         "line_items": [
             {
-                "count": 2,
+                "count": 10,
                 "product_id": "product-2",
                 "price": "2240000000"
             }

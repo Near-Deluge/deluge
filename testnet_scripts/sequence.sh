@@ -1,7 +1,7 @@
 # A Utility script to create product on marketplace contract 
 #  !!! RUN AFTER deploy-account.js
 
-MARKETPLACE_ACCOUNT=dev-1655015385186-20358082432837
+MARKETPLACE_ACCOUNT=dev-1655879841575-44151041997156
 SHOP_ACCOUNT=prix.testnet
 STABLECOIN_ACCOUNT=dlgt.deluge.testnet
 RATING_ACCOUNT=rating.deluge.testnet

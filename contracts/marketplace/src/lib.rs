@@ -227,10 +227,24 @@ impl DelugeBase {
         self.nfts.as_vector().iter().collect()
     }
 
+    
+
     // This is the entrypoint into actually creating an order
     // We must receive valid funds from the stablecoin contract to create the order
     pub fn ft_on_transfer(&mut self, sender_id: String, amount: String, msg: String) -> String {
-        // assert that sender is usdt.test.near, we only support USDT for this POC
+
+        fn return_fees_added_amount(payload_amount: u128) -> U128 {
+            let two_percent = (payload_amount / 100)*2;
+            let MAX_FEES: u128 = 2 * u128::pow(10, 8);
+            if two_percent > MAX_FEES {
+                U128::from(payload_amount + MAX_FEES)
+            } else {
+                U128::from(payload_amount + two_percent)
+            }
+            
+        }
+
+        // assert that sender is usdt.test.near, we only support USDT for MVP
         assert_eq!(
             self.ft_contract_name,
             env::predecessor_account_id().to_string()
@@ -258,10 +272,9 @@ impl DelugeBase {
         // TODO : Subtract the ordered items from the inventory.
         // TODO : Consider checks on the hash length for the secret length since will be considering sha256 hash values
 
-        // Verify that payload amount is same as the amount received
-        // order.payload.amount == amount-=
+        // Verify that recieved amount is 2% or 2 TOKEN (whichever is lower) greater than as the payload amount
         let parsed_amount: u128 = amount.parse().unwrap();
-        assert_eq!(order.payload.amount, U128::from(parsed_amount));
+        assert_eq!(return_fees_added_amount(order.payload.amount.into()), U128::from(parsed_amount));
 
         // Verify that the products are valid
 
@@ -290,8 +303,8 @@ impl DelugeBase {
             l_total += total_item_price;
         }
 
-        assert!(
-            parsed_amount == l_total,
+        assert_eq!(
+            U128::from(parsed_amount), return_fees_added_amount(l_total),
             "Paid amount in Coins does not matches with actual sum of prices on product listing. Paid: {}. Local Total: {}",  
             parsed_amount, 
             l_total
